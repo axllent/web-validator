@@ -167,7 +167,7 @@ func fetchAndParse(httplink, action string, depth int) {
 		// IMAGES/VIDEOS/AUDIO/IFRAME
 		doc.Find("img,embed,source,iframe").Each(func(i int, s *goquery.Selection) {
 			if link, ok := s.Attr("src"); ok {
-				full, err := absoluteURL(link, httplink, false)
+				full, err := absoluteURL(link, baseLink, false)
 				if err != nil {
 					fmt.Println(err)
 					return
@@ -181,7 +181,7 @@ func fetchAndParse(httplink, action string, depth int) {
 				if goquery.NodeName(s) == "iframe" {
 					fileType = "parse"
 				}
-				addQueueLink(full, fileType, baseLink, depth)
+				addQueueLink(full, fileType, httplink, depth)
 			}
 		})
 
@@ -197,7 +197,7 @@ func fetchAndParse(httplink, action string, depth int) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content link to CSS: %s", full))
 				}
-				addQueueLink(full, "parse", baseLink, depth)
+				addQueueLink(full, "parse", httplink, depth)
 			}
 		})
 
@@ -213,7 +213,7 @@ func fetchAndParse(httplink, action string, depth int) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to JS: %s", full))
 				}
-				addQueueLink(full, "head", baseLink, depth)
+				addQueueLink(full, "head", httplink, depth)
 			}
 		})
 
@@ -229,7 +229,7 @@ func fetchAndParse(httplink, action string, depth int) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
 				}
-				addQueueLink(full, "head", baseLink, depth)
+				addQueueLink(full, "head", httplink, depth)
 			}
 		})
 
@@ -244,9 +244,9 @@ func fetchAndParse(httplink, action string, depth int) {
 				isExternal := baseDomain != "" && getHost(full) != baseDomain
 
 				if isExternal {
-					addQueueLink(full, "head", baseLink, depth)
+					addQueueLink(full, "head", httplink, depth)
 				} else {
-					addQueueLink(full, "parse", baseLink, depth+1)
+					addQueueLink(full, "parse", httplink, depth+1)
 				}
 			}
 		})
