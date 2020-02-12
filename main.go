@@ -48,7 +48,7 @@ func main() {
 	}
 
 	flag.BoolVarP(&allLinks, "all", "a", false, "recursive, follow all internal links (default single URL)")
-	flag.IntVarP(&maxDepth, "depth", "d", 0, "crawl depth")
+	flag.IntVarP(&maxDepth, "depth", "d", 0, "crawl depth (\"-a\" will override this)")
 	flag.BoolVarP(&checkExternal, "external", "e", false, "check external links (HEAD only)")
 	flag.BoolVar(&validateHTML, "html", false, "validate HTML")
 	flag.BoolVar(&validateCSS, "css", false, "validate CSS")
