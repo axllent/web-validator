@@ -19,6 +19,7 @@ var (
 	validateCSS     bool
 	showWarnigs     bool
 	baseDomain      string
+	allLinks        bool
 	fullScan        bool
 	htmlValidator   = "https://validator.w3.org/nu/"
 	timeTaken       float64
@@ -46,12 +47,13 @@ func main() {
 		flag.PrintDefaults()
 	}
 
-	flag.IntVarP(&maxDepth, "depth", "d", 1, "crawl depth")
+	flag.BoolVarP(&allLinks, "all", "a", false, "recursive, follow all internal links (default single URL)")
+	flag.IntVarP(&maxDepth, "depth", "d", 0, "crawl depth")
 	flag.BoolVarP(&checkExternal, "external", "e", false, "check external links (HEAD only)")
 	flag.BoolVar(&validateHTML, "html", false, "validate HTML")
 	flag.BoolVar(&validateCSS, "css", false, "validate CSS")
 	flag.BoolVarP(&showWarnigs, "warnings", "w", false, "display warnings too (default only show errors)")
-	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-d -1 -e --html --css\")")
+	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -e --html --css\")")
 	flag.StringVar(&htmlValidator, "validator", htmlValidator, "Nu Html validator")
 	flag.BoolVarP(&update, "update", "u", false, "update to latest release")
 	flag.BoolVarP(&showVersion, "version", "v", false, "show app version")
@@ -114,7 +116,11 @@ func main() {
 		validateCSS = true
 	}
 
-	addQueueLink(args[0], "html", "", 1)
+	if allLinks {
+		maxDepth = -1
+	}
+
+	addQueueLink(args[0], "parse", "", 0)
 
 	elapsed := time.Since(start)
 

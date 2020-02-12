@@ -7,7 +7,7 @@ import (
 )
 
 func displayReport(results []Result) {
-	fmt.Printf("\033[2K\rScanned: %d links\nErrors:  %d\nTime:    %vs\n\n", len(results), errorsProcessed, timeTaken)
+	fmt.Printf("\033[2K\rScanned: %d links\nErrors:  %d\nTime:    %vs\n\n", linksProcessed, errorsProcessed, timeTaken)
 
 	for _, r := range results {
 		if r.StatusCode == 200 && len(r.Errors) == 0 && len(r.ValidationErrors) == 0 {
@@ -15,13 +15,13 @@ func displayReport(results []Result) {
 		}
 
 		fmt.Println("---")
-		fmt.Printf("Link:      %s\n", r.URL)
-		fmt.Printf("Status:    %d (%s)\n", r.StatusCode, http.StatusText(r.StatusCode))
-		if len(processed[r.URL]) > 0 {
-			if len(processed[r.URL]) > 3 {
-				fmt.Printf("Referrers: %s ... (%dx)\n", strings.Join(processed[r.URL][0:3], ", "), len(processed[r.URL]))
+		fmt.Printf("Link:    %s\n", r.URL)
+		fmt.Printf("Status:  %d (%s)\n", r.StatusCode, http.StatusText(r.StatusCode))
+		if len(referers[r.URL]) > 0 {
+			if len(referers[r.URL]) > 3 {
+				fmt.Printf("Refs: %s ... (%dx)\n", strings.Join(referers[r.URL][0:3], "\n           "), len(referers[r.URL]))
 			} else {
-				fmt.Printf("Referrers: %s\n", strings.Join(processed[r.URL], ", "))
+				fmt.Printf("Refs: %s\n", strings.Join(referers[r.URL], "\n           "))
 			}
 		}
 
@@ -29,11 +29,15 @@ func displayReport(results []Result) {
 			fmt.Println("Errors:")
 		}
 
+		errorNr := 0
+
 		for _, e := range r.Errors {
-			fmt.Printf(" - %s\n", e)
+			errorNr++
+			fmt.Printf("  %4d) [error] %s\n", errorNr, e)
 		}
 		for _, e := range r.ValidationErrors {
-			fmt.Printf(" [#%d] (%s) %s\n", e.LastLine, e.Type, strings.TrimSpace(e.Message))
+			errorNr++
+			fmt.Printf("  %4d) [#%d] (%s) %s\n", errorNr, e.LastLine, e.Type, strings.TrimSpace(e.Message))
 		}
 		fmt.Println("")
 	}

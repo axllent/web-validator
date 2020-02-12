@@ -62,15 +62,21 @@ func validate(output Result, body io.Reader, contentType string) Result {
 	}
 
 	client := &http.Client{}
-	resp, err := client.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}
-	defer resp.Body.Close()
+	defer res.Body.Close()
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		panic(err)
+	}
+
+	if res.StatusCode != 200 {
+		output.Errors = append(output.Errors, fmt.Sprintf("%s returned a %d (%s) response", htmlValidator, res.StatusCode, http.StatusText(res.StatusCode)))
+		results = append(results, output)
+		return output
 	}
 
 	response := NuJSONStruct{}

@@ -176,6 +176,26 @@ func truncateString(str string, num int) string {
 	return bnoden
 }
 
+// stringInSlice is a string-only version in php's in_array()
+func stringInSlice(a string, list []string) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+// Single function to return a "weight" (int) based on the action to
+// allow parsing of links that have already had a HEAD request (depth)
+func actionWeight(f string) int {
+	if f == "parse" {
+		return 2
+	}
+
+	return 1
+}
+
 // Debugging pretty print
 func prettyPrint(i interface{}) {
 	s, _ := json.MarshalIndent(i, "", "\t")
