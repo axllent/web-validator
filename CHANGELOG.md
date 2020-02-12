@@ -3,6 +3,7 @@
 ## [dev]
 
 - Fix report referer formatting
+- Rename "external links" to "outbound links"
 
 
 ## [0.0.2]

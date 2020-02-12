@@ -4,7 +4,7 @@
 
 A command-line website validator for Linux, Mac & Windows, which can spider through a website, 
 validating all HTML & CSS pages, check the existence of all assets (images, css, fonts etc), 
-and verify external links.
+and verify outbound links.
 
 
 ## Features
@@ -13,7 +13,7 @@ and verify external links.
 - HTML & CSS validation using (default) the [Nu Html Checker](https://validator.w3.org/)
 - Detect & checks linked assets from HTML & linked CSS (fonts, favicons, images, videos, etc)
 - Detect mixed content (HTTPS => HTTP) for linked assets (fonts, images, CSS, JS etc)
-- Verify links to external sites
+- Verify outbound links (to external websites)
 - Summary report or errors (& optionally warnings)
 
 
@@ -25,7 +25,7 @@ Usage: web-validator [options] <url>
 Options:
   -a, --all                recursive, follow all internal links (default single URL)
   -d, --depth int          crawl depth ("-a" will override this)
-  -e, --external           check external links (HEAD only)
+  -e, --outbound           check outbound links (HEAD only)
       --html               validate HTML
       --css                validate CSS
   -w, --warnings           display warnings too (default only show errors)
@@ -41,8 +41,8 @@ Options:
 - `web-validator https://example.com/ --css --html` - scan URL, verify all direct assets & links, validate HTML & CSS
 - `web-validator https://example.com/ -a` - scan entire site, verify assets & links
 - `web-validator https://example.com/ --css --html -d 2` - scan site to a depth of 2 internal links, verify assets & links, validate HTML and CSS
-- `web-validator https://example.com/ -e` - scan entire site, verify all assets, verify external links
-- `web-validator https://example.com/ -f` - scan entire site, verify all assets, verify external links, validate HTML & CSS
+- `web-validator https://example.com/ -e` - scan entire site, verify all assets, verify outbound links
+- `web-validator https://example.com/ -f` - scan entire site, verify all assets, verify outbound links, validate HTML & CSS
 
 
 ## Installing

@@ -13,7 +13,7 @@ var ignoreHosts = regexp.MustCompile(`^https?://(www\.)(linkedin\.com)`)
 
 // HEAD a link to get the status of the URL
 // Note: some sites block HEAD, so if a HEAD fails with a 404 or 405 error
-// then a getResponse() is done (external links only)
+// then a getResponse() is done (outbound links only)
 func head(httplink string) {
 	// check it's not a host that won't play ball, else ignore
 	if ignoreHosts.MatchString(httplink) {
@@ -49,9 +49,9 @@ func head(httplink string) {
 
 	// some hosts block HEAD requests, so we do a standard GET instead
 	if res.StatusCode == 404 || res.StatusCode == 405 {
-		isExternal := baseDomain != "" && getHost(httplink) != baseDomain
+		isOutbound := baseDomain != "" && getHost(httplink) != baseDomain
 
-		if isExternal {
+		if isOutbound {
 			getResponse(httplink)
 			return
 		}
