@@ -64,17 +64,21 @@ func validate(output Result, body io.Reader, contentType string) Result {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		output.Errors = append(output.Errors, fmt.Sprintf("Validator: %s", err))
+		results = append(results, output)
+		return output
 	}
 	defer res.Body.Close()
 
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		panic(err)
+		output.Errors = append(output.Errors, fmt.Sprintf("Validator: %s", err))
+		results = append(results, output)
+		return output
 	}
 
 	if res.StatusCode != 200 {
-		output.Errors = append(output.Errors, fmt.Sprintf("%s returned a %d (%s) response", htmlValidator, res.StatusCode, http.StatusText(res.StatusCode)))
+		output.Errors = append(output.Errors, fmt.Sprintf("Validator: %s returned a %d (%s) response", htmlValidator, res.StatusCode, http.StatusText(res.StatusCode)))
 		results = append(results, output)
 		return output
 	}

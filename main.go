@@ -83,7 +83,8 @@ func main() {
 	if update {
 		rel, err := ghru.Update("axllent/web-validator", "web-validator", appVersion)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
+			os.Exit(2)
 		}
 		fmt.Printf("Updated %s to version %s\n", os.Args[0], rel)
 		os.Exit(0)
@@ -100,7 +101,8 @@ func main() {
 	if htmlValidator != "" {
 		u, err := url.Parse(htmlValidator)
 		if err != nil {
-			panic(fmt.Sprintf("Invalid Nu validator address: %s", htmlValidator))
+			fmt.Printf("Invalid Nu validator address: %s\n", htmlValidator)
+			os.Exit(2)
 		}
 		// add `?out=json`
 		q := u.Query()
