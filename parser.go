@@ -50,7 +50,7 @@ func addQueueLink(httplink, action, referer string, depth int) {
 			referers[httplink] = append(referers[httplink], referer)
 		}
 	} else {
-		// enforce HEAD - prevent from being procesed as HTML / CSS
+		// enforce HEAD - prevent validating common files HTML / CSS
 		if action == "parse" && fileRegex.MatchString(httplink) {
 			action = "head"
 		}
@@ -167,21 +167,21 @@ func fetchAndParse(httplink, action string, depth int) {
 		// IMAGES/VIDEOS/AUDIO/IFRAME
 		doc.Find("img,embed,source,iframe").Each(func(i int, s *goquery.Selection) {
 			if link, ok := s.Attr("src"); ok {
-				full, err := absoluteURL(link, httplink, false)
+				full, err := absoluteURL(link, baseLink, false)
 				if err != nil {
 					fmt.Println(err)
 					return
 				}
-				if isDowngraded(httplink, full) {
+				if isMixedContent(httplink, full) {
 					errorsProcessed++
-					output.Errors = append(output.Errors, fmt.Sprintf("Downgraded prototol to image: %s", full))
+					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to file: %s", full))
 				}
 				fileType := "head"
 				// parse iframes as html
 				if goquery.NodeName(s) == "iframe" {
 					fileType = "parse"
 				}
-				addQueueLink(full, fileType, baseLink, depth)
+				addQueueLink(full, fileType, httplink, depth)
 			}
 		})
 
@@ -193,11 +193,11 @@ func fetchAndParse(httplink, action string, depth int) {
 					fmt.Println(err)
 					return
 				}
-				if isDowngraded(baseLink, full) {
+				if isMixedContent(baseLink, full) {
 					errorsProcessed++
-					output.Errors = append(output.Errors, fmt.Sprintf("Downgraded prototol to CSS stylesheet: %s", full))
+					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content link to CSS: %s", full))
 				}
-				addQueueLink(full, "parse", baseLink, depth)
+				addQueueLink(full, "parse", httplink, depth)
 			}
 		})
 
@@ -209,11 +209,11 @@ func fetchAndParse(httplink, action string, depth int) {
 					fmt.Println(err)
 					return
 				}
-				if isDowngraded(baseLink, full) {
+				if isMixedContent(baseLink, full) {
 					errorsProcessed++
-					output.Errors = append(output.Errors, fmt.Sprintf("Downgraded prototol to JS: %s", full))
+					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to JS: %s", full))
 				}
-				addQueueLink(full, "head", baseLink, depth)
+				addQueueLink(full, "head", httplink, depth)
 			}
 		})
 
@@ -225,11 +225,11 @@ func fetchAndParse(httplink, action string, depth int) {
 					fmt.Println(err)
 					return
 				}
-				if isDowngraded(baseLink, full) {
+				if isMixedContent(baseLink, full) {
 					errorsProcessed++
-					output.Errors = append(output.Errors, fmt.Sprintf("Downgraded prototol to favicon: %s", full))
+					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
 				}
-				addQueueLink(full, "head", baseLink, depth)
+				addQueueLink(full, "head", httplink, depth)
 			}
 		})
 
@@ -244,9 +244,9 @@ func fetchAndParse(httplink, action string, depth int) {
 				isExternal := baseDomain != "" && getHost(full) != baseDomain
 
 				if isExternal {
-					addQueueLink(full, "head", baseLink, depth)
+					addQueueLink(full, "head", httplink, depth)
 				} else {
-					addQueueLink(full, "parse", baseLink, depth+1)
+					addQueueLink(full, "parse", httplink, depth+1)
 				}
 			}
 		})
@@ -280,9 +280,9 @@ func fetchAndParse(httplink, action string, depth int) {
 						// ignore failed asset links as they could be binary strings for svg etc
 						continue
 					}
-					if isDowngraded(httplink, full) {
+					if isMixedContent(httplink, full) {
 						errorsProcessed++
-						output.Errors = append(output.Errors, fmt.Sprintf("Downgraded prototol to CSS asset: %s", full))
+						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to CSS: %s", full))
 					}
 					addQueueLink(full, "head", httplink, depth)
 				}

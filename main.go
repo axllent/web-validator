@@ -48,7 +48,7 @@ func main() {
 	}
 
 	flag.BoolVarP(&allLinks, "all", "a", false, "recursive, follow all internal links (default single URL)")
-	flag.IntVarP(&maxDepth, "depth", "d", 0, "crawl depth")
+	flag.IntVarP(&maxDepth, "depth", "d", 0, "crawl depth (\"-a\" will override this)")
 	flag.BoolVarP(&checkExternal, "external", "e", false, "check external links (HEAD only)")
 	flag.BoolVar(&validateHTML, "html", false, "validate HTML")
 	flag.BoolVar(&validateCSS, "css", false, "validate CSS")
@@ -83,7 +83,8 @@ func main() {
 	if update {
 		rel, err := ghru.Update("axllent/web-validator", "web-validator", appVersion)
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
+			os.Exit(2)
 		}
 		fmt.Printf("Updated %s to version %s\n", os.Args[0], rel)
 		os.Exit(0)
@@ -100,7 +101,8 @@ func main() {
 	if htmlValidator != "" {
 		u, err := url.Parse(htmlValidator)
 		if err != nil {
-			panic(fmt.Sprintf("Invalid Nu validator address: %s", htmlValidator))
+			fmt.Printf("Invalid Nu validator address: %s\n", htmlValidator)
+			os.Exit(2)
 		}
 		// add `?out=json`
 		q := u.Query()
