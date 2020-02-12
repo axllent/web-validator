@@ -1,4 +1,4 @@
-# Web-validator - Validate website HTML & CSS, check links & resources
+# Validate website HTML & CSS, check links & resources
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/axllent/web-validator)](https://goreportcard.com/report/github.com/axllent/web-validator)
 
@@ -11,10 +11,10 @@ and verify external links.
 
 - Check a single URL, to a certain depth, or an entire website
 - HTML & CSS validation using (default) the [Nu Html Checker](https://validator.w3.org/)
-- Detect & checks linked assets from HTML & CSS (CSS, favicons, images, videos, etc)
-- Detect mixed content (HTTPS => HTTP) for linked assets (images, CSS, JS etc)
+- Detect & checks linked assets from HTML & linked CSS (fonts, favicons, images, videos, etc)
+- Detect mixed content (HTTPS => HTTP) for linked assets (fonts, images, CSS, JS etc)
 - Verify links to external sites
-- Summary report or errors
+- Summary report or errors (& optionally warnings)
 
 
 ## Usage options
@@ -37,7 +37,7 @@ Options:
 
 ## Examples
 
-- `web-validator https://example.com/` - scan just this URL, verify all direct assets & links
+- `web-validator https://example.com/` - scan URL, verify all direct assets & links
 - `web-validator https://example.com/ --css --html` - scan URL, verify all direct assets & links, validate HTML & CSS
 - `web-validator https://example.com/ -a` - scan entire site, verify assets & links
 - `web-validator https://example.com/ --css --html -d 2` - scan site to a depth of 2 internal links, verify assets & links, validate HTML and CSS
