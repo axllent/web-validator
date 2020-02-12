@@ -19,9 +19,9 @@ func displayReport(results []Result) {
 		fmt.Printf("Status:  %d (%s)\n", r.StatusCode, http.StatusText(r.StatusCode))
 		if len(referers[r.URL]) > 0 {
 			if len(referers[r.URL]) > 3 {
-				fmt.Printf("Refs: %s ... (%dx)\n", strings.Join(referers[r.URL][0:3], "\n           "), len(referers[r.URL]))
+				fmt.Printf("Refs:    %s ... (%dx)\n", strings.Join(referers[r.URL][0:3], "\n         "), len(referers[r.URL]))
 			} else {
-				fmt.Printf("Refs: %s\n", strings.Join(referers[r.URL], "\n           "))
+				fmt.Printf("Refs:    %s\n", strings.Join(referers[r.URL], "\n         "))
 			}
 		}
 
