@@ -50,7 +50,7 @@ func addQueueLink(httplink, action, referer string, depth int) {
 			referers[httplink] = append(referers[httplink], referer)
 		}
 	} else {
-		// enforce HEAD - prevent from being procesed as HTML / CSS
+		// enforce HEAD - prevent validating common files HTML / CSS
 		if action == "parse" && fileRegex.MatchString(httplink) {
 			action = "head"
 		}
