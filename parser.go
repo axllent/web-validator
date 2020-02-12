@@ -172,9 +172,9 @@ func fetchAndParse(httplink, action string, depth int) {
 					fmt.Println(err)
 					return
 				}
-				if isDowngraded(httplink, full) {
+				if isMixedContent(httplink, full) {
 					errorsProcessed++
-					output.Errors = append(output.Errors, fmt.Sprintf("Downgraded prototol to image: %s", full))
+					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to file: %s", full))
 				}
 				fileType := "head"
 				// parse iframes as html
@@ -193,9 +193,9 @@ func fetchAndParse(httplink, action string, depth int) {
 					fmt.Println(err)
 					return
 				}
-				if isDowngraded(baseLink, full) {
+				if isMixedContent(baseLink, full) {
 					errorsProcessed++
-					output.Errors = append(output.Errors, fmt.Sprintf("Downgraded prototol to CSS stylesheet: %s", full))
+					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content link to CSS: %s", full))
 				}
 				addQueueLink(full, "parse", baseLink, depth)
 			}
@@ -209,9 +209,9 @@ func fetchAndParse(httplink, action string, depth int) {
 					fmt.Println(err)
 					return
 				}
-				if isDowngraded(baseLink, full) {
+				if isMixedContent(baseLink, full) {
 					errorsProcessed++
-					output.Errors = append(output.Errors, fmt.Sprintf("Downgraded prototol to JS: %s", full))
+					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to JS: %s", full))
 				}
 				addQueueLink(full, "head", baseLink, depth)
 			}
@@ -225,9 +225,9 @@ func fetchAndParse(httplink, action string, depth int) {
 					fmt.Println(err)
 					return
 				}
-				if isDowngraded(baseLink, full) {
+				if isMixedContent(baseLink, full) {
 					errorsProcessed++
-					output.Errors = append(output.Errors, fmt.Sprintf("Downgraded prototol to favicon: %s", full))
+					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
 				}
 				addQueueLink(full, "head", baseLink, depth)
 			}
@@ -280,9 +280,9 @@ func fetchAndParse(httplink, action string, depth int) {
 						// ignore failed asset links as they could be binary strings for svg etc
 						continue
 					}
-					if isDowngraded(httplink, full) {
+					if isMixedContent(httplink, full) {
 						errorsProcessed++
-						output.Errors = append(output.Errors, fmt.Sprintf("Downgraded prototol to CSS asset: %s", full))
+						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to CSS: %s", full))
 					}
 					addQueueLink(full, "head", httplink, depth)
 				}

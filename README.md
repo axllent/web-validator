@@ -1,5 +1,7 @@
 # Web-validator - Validate website HTML & CSS, check links & resources
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/axllent/web-validator)](https://goreportcard.com/report/github.com/axllent/web-validator)
+
 A command-line website validator for Linux, Mac & Windows, which can spider through a website, 
 validating all HTML & CSS pages, check the existence of all assets (images, css, fonts etc), 
 and verify external links.
@@ -10,7 +12,7 @@ and verify external links.
 - Check a single URL, to a certain depth, or an entire website
 - HTML & CSS validation using (default) the [Nu Html Checker](https://validator.w3.org/)
 - Detect & checks linked assets from HTML & CSS (CSS, favicons, images, videos, etc)
-- Detect protocol downgrading (HTTPS => HTTP) for linked assets (images, CSS, JS etc)
+- Detect mixed content (HTTPS => HTTP) for linked assets (images, CSS, JS etc)
 - Verify links to external sites
 - Summary report or errors
 

@@ -148,9 +148,8 @@ func absoluteURL(link, baselink string, isHTML bool) (string, error) {
 	return result.String(), nil
 }
 
-// Return whether a link relationship is downgraded.
-// Used for asset relationships
-func isDowngraded(srclink, reflink string) bool {
+// Whether related link is mixed content (HTTPS to HTTP).
+func isMixedContent(srclink, reflink string) bool {
 	srcLink, err := url.Parse(srclink)
 	if err != nil || srcLink.Scheme == "http" {
 		return false
