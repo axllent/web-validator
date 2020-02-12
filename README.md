@@ -22,7 +22,7 @@ Usage: web-validator [options] <url>
 
 Options:
   -a, --all                recursive, follow all internal links (default single URL)
-  -d, --depth int          crawl depth (don't use with "-a")
+  -d, --depth int          crawl depth ("-a" will override this)
   -e, --external           check external links (HEAD only)
       --html               validate HTML
       --css                validate CSS
