@@ -47,3 +47,20 @@ Options:
 
 Download the [latest binary release](https://github.com/axllent/web-validator/releases/latest) for your system, 
 or build from source `go get -u github.com/axllent/web-validator`(go >= 1.11 required)
+
+
+## FAQ
+
+### When I scan a single page, web-validator scans many other pages too
+
+When scanning a page, the software will check all internal links from that single page, which include both pages and files. Only a HEAD request done on linked pages (no validation etc) to check for a response.
+
+
+### Web-validator says some of my outbound links are broken, however they do work
+
+Some sites specificaly block all HEAD requests, in which case web-validator will try a regular GET request. Some sites however go to extreme lengths to prevent any kind of scraping, such as LinkedIn, so these will always return an error response. LinkedIn (specifically) is now blacklisted in the application, so any linkedin links are completely ignored. If you come across another major site with similar issues, then let me know and I will add them to the list.
+
+
+### HTML/CSS validation
+
+Validation uses the [Nu Html validator]("https://validator.w3.org/nu/"), and by default uses the online public service (they [encourage this](https://github.com/validator/validator/wiki/Service-%C2%BB-Input-%C2%BB-POST-body)). You can however use your [own instance](https://validator.w3.org/docs/users.html) of the validator (open source), and use the `--validator <your-server>` to specify your own.
