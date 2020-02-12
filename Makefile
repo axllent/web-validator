@@ -1,6 +1,6 @@
 TAG=`git describe --tags`
 VERSION ?= `[ -d ".git" ] && git describe --tags || echo "0.0.0"`
-LDFLAGS=-ldflags "-s -w -X main.version=${VERSION}"
+LDFLAGS=-ldflags "-s -w -X main.appVersion=${VERSION}"
 BINARY="web-validator"
 
 build = echo "\n\nBuilding $(1)-$(2)" && GOOS=$(1) GOARCH=$(2) go build ${LDFLAGS} -o dist/${BINARY}_${VERSION}_$(1)_$(2) \
