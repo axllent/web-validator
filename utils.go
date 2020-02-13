@@ -22,7 +22,8 @@ func head(httplink string) {
 	timeout := time.Duration(10 * time.Second)
 
 	client := http.Client{
-		Timeout: timeout,
+		Timeout:       timeout,
+		CheckRedirect: redirectMiddleware,
 	}
 
 	req, err := http.NewRequest("HEAD", httplink, nil)
@@ -37,6 +38,22 @@ func head(httplink string) {
 
 	res, err := client.Do(req)
 	if err != nil {
+		errorsProcessed++
+		if res != nil {
+			loc := res.Header.Get("Location")
+			output.StatusCode = res.StatusCode
+			if loc != "" {
+				full, err := absoluteURL(loc, httplink, false)
+				if err == nil {
+					output.Redirect = full
+					results = append(results, output)
+					addQueueLink(full, "head", httplink, 0)
+					return
+				}
+			}
+			results = append(results, output)
+			return
+		}
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
 		results = append(results, output)
 		return
@@ -185,6 +202,14 @@ func actionWeight(f string) int {
 	}
 
 	return 1
+}
+
+// RedirectMiddleware will return an error on redirect if redirectWarnings == true
+func redirectMiddleware(req *http.Request, via []*http.Request) error {
+	if redirectWarnings {
+		return fmt.Errorf("%d redirect", req.Response.StatusCode)
+	}
+	return nil
 }
 
 // Debugging pretty print
