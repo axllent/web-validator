@@ -14,14 +14,14 @@ func displayReport(results []Result) {
 			continue
 		}
 
-		fmt.Println("---")
+		fmt.Printf("---\n\n")
 		fmt.Printf("Link:    %s\n", r.URL)
 		fmt.Printf("Status:  %d (%s)\n", r.StatusCode, http.StatusText(r.StatusCode))
 		if len(referers[r.URL]) > 0 {
 			if len(referers[r.URL]) > 3 {
-				fmt.Printf("Refs: %s ... (%dx)\n", strings.Join(referers[r.URL][0:3], "\n           "), len(referers[r.URL]))
+				fmt.Printf("Refs:    %s ... (%dx)\n", strings.Join(referers[r.URL][0:3], "\n         "), len(referers[r.URL]))
 			} else {
-				fmt.Printf("Refs: %s\n", strings.Join(referers[r.URL], "\n           "))
+				fmt.Printf("Refs:    %s\n", strings.Join(referers[r.URL], "\n         "))
 			}
 		}
 
@@ -33,11 +33,11 @@ func displayReport(results []Result) {
 
 		for _, e := range r.Errors {
 			errorNr++
-			fmt.Printf("  %4d) [error] %s\n", errorNr, e)
+			fmt.Printf("  %4d)  [error] %s\n", errorNr, e)
 		}
 		for _, e := range r.ValidationErrors {
 			errorNr++
-			fmt.Printf("  %4d) [#%d] (%s) %s\n", errorNr, e.LastLine, e.Type, strings.TrimSpace(e.Message))
+			fmt.Printf("  %4d)  [#%d] (%s) %s\n", errorNr, e.LastLine, e.Type, strings.TrimSpace(e.Message))
 		}
 		fmt.Println("")
 	}

@@ -14,7 +14,7 @@ var (
 	results         []Result
 	uri             string
 	maxDepth        int
-	checkExternal   bool
+	checkOutbound   bool
 	validateHTML    bool
 	validateCSS     bool
 	showWarnigs     bool
@@ -49,11 +49,11 @@ func main() {
 
 	flag.BoolVarP(&allLinks, "all", "a", false, "recursive, follow all internal links (default single URL)")
 	flag.IntVarP(&maxDepth, "depth", "d", 0, "crawl depth (\"-a\" will override this)")
-	flag.BoolVarP(&checkExternal, "external", "e", false, "check external links (HEAD only)")
+	flag.BoolVarP(&checkOutbound, "outbound", "o", false, "check outbound links (HEAD only)")
 	flag.BoolVar(&validateHTML, "html", false, "validate HTML")
 	flag.BoolVar(&validateCSS, "css", false, "validate CSS")
 	flag.BoolVarP(&showWarnigs, "warnings", "w", false, "display warnings too (default only show errors)")
-	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -e --html --css\")")
+	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -o --html --css\")")
 	flag.StringVar(&htmlValidator, "validator", htmlValidator, "Nu Html validator")
 	flag.BoolVarP(&update, "update", "u", false, "update to latest release")
 	flag.BoolVarP(&showVersion, "version", "v", false, "show app version")
@@ -96,8 +96,6 @@ func main() {
 		os.Exit(2)
 	}
 
-	start := time.Now()
-
 	if htmlValidator != "" {
 		u, err := url.Parse(htmlValidator)
 		if err != nil {
@@ -113,7 +111,7 @@ func main() {
 
 	if fullScan {
 		maxDepth = -1
-		checkExternal = true
+		checkOutbound = true
 		validateHTML = true
 		validateCSS = true
 	}
@@ -121,6 +119,14 @@ func main() {
 	if allLinks {
 		maxDepth = -1
 	}
+
+	u, err := url.Parse(args[0])
+	if err != nil || u.Host == "" {
+		fmt.Printf("Please use a full URL: %s\n", args[0])
+		os.Exit(2)
+	}
+
+	start := time.Now()
 
 	addQueueLink(args[0], "parse", "", 0)
 

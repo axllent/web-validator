@@ -68,10 +68,10 @@ func addQueueLink(httplink, action, referer string, depth int) {
 			referers[httplink] = []string{referer}
 		}
 
-		isExternal := baseDomain != "" && getHost(httplink) != baseDomain
+		isOutbound := baseDomain != "" && getHost(httplink) != baseDomain
 
-		if isExternal {
-			if checkExternal {
+		if isOutbound {
+			if checkOutbound {
 				head(httplink)
 			} else {
 				linksProcessed--
@@ -241,9 +241,9 @@ func fetchAndParse(httplink, action string, depth int) {
 					return
 				}
 
-				isExternal := baseDomain != "" && getHost(full) != baseDomain
+				isOutbound := baseDomain != "" && getHost(full) != baseDomain
 
-				if isExternal {
+				if isOutbound {
 					addQueueLink(full, "head", httplink, depth)
 				} else {
 					addQueueLink(full, "parse", httplink, depth+1)
