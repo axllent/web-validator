@@ -51,8 +51,6 @@ func head(httplink string) {
 					return
 				}
 			}
-			results = append(results, output)
-			return
 		}
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
 		results = append(results, output)
@@ -87,7 +85,8 @@ func getResponse(httplink string) {
 	timeout := time.Duration(10 * time.Second)
 
 	client := http.Client{
-		Timeout: timeout,
+		Timeout:       timeout,
+		CheckRedirect: redirectMiddleware,
 	}
 
 	req, err := http.NewRequest("GET", httplink, nil)
@@ -102,6 +101,20 @@ func getResponse(httplink string) {
 
 	res, err := client.Do(req)
 	if err != nil {
+		errorsProcessed++
+		if res != nil {
+			loc := res.Header.Get("Location")
+			output.StatusCode = res.StatusCode
+			if loc != "" {
+				full, err := absoluteURL(loc, httplink, false)
+				if err == nil {
+					output.Redirect = full
+					results = append(results, output)
+					addQueueLink(full, "head", httplink, 0)
+					return
+				}
+			}
+		}
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
 		results = append(results, output)
 		return
