@@ -1,9 +1,10 @@
 # Changelog
 
-## [dev]
+## [0.0.3]
 
 - Fix report referer formatting
 - Rename "external links" to "outbound links"
+- Validate command-line URL
 
 
 ## [0.0.2]
