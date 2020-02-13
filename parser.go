@@ -42,6 +42,12 @@ func addQueueLink(httplink, action, referer string, depth int) {
 		action = "head"
 	}
 
+	for _, r := range ignoreMatches {
+		if r.MatchString(httplink) {
+			return
+		}
+	}
+
 	// check if we have processed this already
 	processType, found := processed[httplink]
 	if found && processType >= actionWeight(action) {

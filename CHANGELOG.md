@@ -1,5 +1,10 @@
 # Changelog
 
+## [dev]
+
+- Add `-i|--ignore` option to skip comma-separated urls
+
+
 ## [0.0.3]
 
 - Fix report referer formatting

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/axllent/ghru"
@@ -25,6 +27,7 @@ var (
 	timeTaken       float64
 	update          bool
 	showVersion     bool
+	ignoreURLs      string
 	appVersion      = "dev"
 	userAgent       = "Web-validator"
 	linksProcessed  = 0
@@ -52,6 +55,7 @@ func main() {
 	flag.BoolVarP(&checkOutbound, "outbound", "o", false, "check outbound links (HEAD only)")
 	flag.BoolVar(&validateHTML, "html", false, "validate HTML")
 	flag.BoolVar(&validateCSS, "css", false, "validate CSS")
+	flag.StringVarP(&ignoreURLs, "ignore", "i", "", "ignore URLs, comma-separated, wildcards allowed (*.jpg,example.com)")
 	flag.BoolVarP(&showWarnigs, "warnings", "w", false, "display warnings too (default only show errors)")
 	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -o --html --css\")")
 	flag.StringVar(&htmlValidator, "validator", htmlValidator, "Nu Html validator")
@@ -107,6 +111,18 @@ func main() {
 		q.Set("out", "json")
 		u.RawQuery = q.Encode()
 		htmlValidator = u.String()
+	}
+
+	if ignoreURLs != "" {
+		// create slice of ignore strings converting them to regex
+		urls := strings.Split(ignoreURLs, ",")
+		for _, u := range urls {
+			filter := strings.Replace(u, "*", "WILDCARD_CHARACTER_HERE", -1)
+			filter = regexp.QuoteMeta(filter)
+			filter = strings.Replace(filter, "WILDCARD_CHARACTER_HERE", "(.*)", -1)
+			re := regexp.MustCompile(filter)
+			ignoreMatches = append(ignoreMatches, re)
+		}
 	}
 
 	if fullScan {

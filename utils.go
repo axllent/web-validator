@@ -9,17 +9,14 @@ import (
 	"time"
 )
 
-var ignoreHosts = regexp.MustCompile(`^https?://(www\.)(linkedin\.com)`)
+var (
+	ignoreMatches = []*regexp.Regexp{regexp.MustCompile(`^https?://(www\.)(linkedin\.com)`)}
+)
 
 // HEAD a link to get the status of the URL
 // Note: some sites block HEAD, so if a HEAD fails with a 404 or 405 error
 // then a getResponse() is done (outbound links only)
 func head(httplink string) {
-	// check it's not a host that won't play ball, else ignore
-	if ignoreHosts.MatchString(httplink) {
-		return
-	}
-
 	output := Result{}
 	output.URL = httplink
 	timeout := time.Duration(10 * time.Second)
@@ -68,11 +65,6 @@ func head(httplink string) {
 
 // Fallback for failed HEAD requests
 func getResponse(httplink string) {
-	// completely ignore requets to ignoreHosts
-	if ignoreHosts.MatchString(httplink) {
-		return
-	}
-
 	output := Result{}
 	output.URL = httplink
 	timeout := time.Duration(10 * time.Second)
