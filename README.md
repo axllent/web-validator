@@ -25,11 +25,13 @@ Usage: web-validator [options] <url>
 Options:
   -a, --all                recursive, follow all internal links (default single URL)
   -d, --depth int          crawl depth ("-a" will override this)
-  -e, --outbound           check outbound links (HEAD only)
+  -o, --outbound           check outbound links (HEAD only)
       --html               validate HTML
       --css                validate CSS
-  -w, --warnings           display warnings too (default only show errors)
-  -f, --full               full scan (same as "-a -e --html --css")
+  -i, --ignore string      ignore URLs, comma-separated, wildcards allowed (*.jpg,example.com)
+  -r, --redirects          display redirects
+  -w, --warnings           display validation warnings (default errors only)
+  -f, --full               full scan (same as "-a -r -o --html --css")
       --validator string   Nu Html validator (default "https://validator.w3.org/nu/")
   -u, --update             update to latest release
   -v, --version            show app version

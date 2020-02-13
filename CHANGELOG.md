@@ -1,8 +1,9 @@
 # Changelog
 
-## [dev]
+## [0.0.4]
 
 - Add `-i|--ignore` option to skip comma-separated urls
+- Add `-r|--redirects` option to report redirects
 
 
 ## [0.0.3]

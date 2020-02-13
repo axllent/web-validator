@@ -33,6 +33,7 @@ type Result struct {
 	StatusCode       int
 	Errors           []string
 	ValidationErrors []ValidationError
+	Redirect         string
 }
 
 // Add a link to the queue.
@@ -100,7 +101,8 @@ func fetchAndParse(httplink, action string, depth int) {
 	timeout := time.Duration(10 * time.Second)
 
 	client := http.Client{
-		Timeout: timeout,
+		Timeout:       timeout,
+		CheckRedirect: redirectMiddleware,
 	}
 
 	req, err := http.NewRequest("GET", httplink, nil)
@@ -116,6 +118,21 @@ func fetchAndParse(httplink, action string, depth int) {
 	res, err := client.Do(req)
 	if err != nil {
 		errorsProcessed++
+		if res != nil {
+			loc := res.Header.Get("Location")
+			output.StatusCode = res.StatusCode
+			if loc != "" {
+				full, err := absoluteURL(loc, httplink, false)
+				if err == nil {
+					output.Redirect = full
+					results = append(results, output)
+					addQueueLink(full, action, httplink, depth)
+					return
+				}
+			}
+			results = append(results, output)
+			return
+		}
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
 		results = append(results, output)
 		return
