@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/axllent/ghru"
@@ -11,24 +13,26 @@ import (
 )
 
 var (
-	results         []Result
-	uri             string
-	maxDepth        int
-	checkOutbound   bool
-	validateHTML    bool
-	validateCSS     bool
-	showWarnigs     bool
-	baseDomain      string
-	allLinks        bool
-	fullScan        bool
-	htmlValidator   = "https://validator.w3.org/nu/"
-	timeTaken       float64
-	update          bool
-	showVersion     bool
-	appVersion      = "dev"
-	userAgent       = "Web-validator"
-	linksProcessed  = 0
-	errorsProcessed = 0
+	results          []Result
+	uri              string
+	maxDepth         int
+	checkOutbound    bool
+	validateHTML     bool
+	validateCSS      bool
+	showWarnigs      bool
+	baseDomain       string
+	allLinks         bool
+	fullScan         bool
+	redirectWarnings bool
+	htmlValidator    = "https://validator.w3.org/nu/"
+	timeTaken        float64
+	update           bool
+	showVersion      bool
+	ignoreURLs       string
+	appVersion       = "dev"
+	userAgent        = "Web-validator"
+	linksProcessed   = 0
+	errorsProcessed  = 0
 )
 
 func main() {
@@ -52,8 +56,10 @@ func main() {
 	flag.BoolVarP(&checkOutbound, "outbound", "o", false, "check outbound links (HEAD only)")
 	flag.BoolVar(&validateHTML, "html", false, "validate HTML")
 	flag.BoolVar(&validateCSS, "css", false, "validate CSS")
-	flag.BoolVarP(&showWarnigs, "warnings", "w", false, "display warnings too (default only show errors)")
-	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -o --html --css\")")
+	flag.StringVarP(&ignoreURLs, "ignore", "i", "", "ignore URLs, comma-separated, wildcards allowed (*.jpg,example.com)")
+	flag.BoolVarP(&redirectWarnings, "redirects", "r", false, "display redirects")
+	flag.BoolVarP(&showWarnigs, "warnings", "w", false, "display validation warnings (default errors only)")
+	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -r -o --html --css\")")
 	flag.StringVar(&htmlValidator, "validator", htmlValidator, "Nu Html validator")
 	flag.BoolVarP(&update, "update", "u", false, "update to latest release")
 	flag.BoolVarP(&showVersion, "version", "v", false, "show app version")
@@ -109,11 +115,24 @@ func main() {
 		htmlValidator = u.String()
 	}
 
+	if ignoreURLs != "" {
+		// create slice of ignore strings converting them to regex
+		urls := strings.Split(ignoreURLs, ",")
+		for _, u := range urls {
+			filter := strings.Replace(u, "*", "WILDCARD_CHARACTER_HERE", -1)
+			filter = regexp.QuoteMeta(filter)
+			filter = strings.Replace(filter, "WILDCARD_CHARACTER_HERE", "(.*)", -1)
+			re := regexp.MustCompile(filter)
+			ignoreMatches = append(ignoreMatches, re)
+		}
+	}
+
 	if fullScan {
 		maxDepth = -1
 		checkOutbound = true
 		validateHTML = true
 		validateCSS = true
+		redirectWarnings = true
 	}
 
 	if allLinks {

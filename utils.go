@@ -9,23 +9,21 @@ import (
 	"time"
 )
 
-var ignoreHosts = regexp.MustCompile(`^https?://(www\.)(linkedin\.com)`)
+var (
+	ignoreMatches = []*regexp.Regexp{regexp.MustCompile(`^https?://(www\.)(linkedin\.com)`)}
+)
 
 // HEAD a link to get the status of the URL
 // Note: some sites block HEAD, so if a HEAD fails with a 404 or 405 error
 // then a getResponse() is done (outbound links only)
 func head(httplink string) {
-	// check it's not a host that won't play ball, else ignore
-	if ignoreHosts.MatchString(httplink) {
-		return
-	}
-
 	output := Result{}
 	output.URL = httplink
 	timeout := time.Duration(10 * time.Second)
 
 	client := http.Client{
-		Timeout: timeout,
+		Timeout:       timeout,
+		CheckRedirect: redirectMiddleware,
 	}
 
 	req, err := http.NewRequest("HEAD", httplink, nil)
@@ -40,6 +38,22 @@ func head(httplink string) {
 
 	res, err := client.Do(req)
 	if err != nil {
+		errorsProcessed++
+		if res != nil {
+			loc := res.Header.Get("Location")
+			output.StatusCode = res.StatusCode
+			if loc != "" {
+				full, err := absoluteURL(loc, httplink, false)
+				if err == nil {
+					output.Redirect = full
+					results = append(results, output)
+					addQueueLink(full, "head", httplink, 0)
+					return
+				}
+			}
+			results = append(results, output)
+			return
+		}
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
 		results = append(results, output)
 		return
@@ -68,11 +82,6 @@ func head(httplink string) {
 
 // Fallback for failed HEAD requests
 func getResponse(httplink string) {
-	// completely ignore requets to ignoreHosts
-	if ignoreHosts.MatchString(httplink) {
-		return
-	}
-
 	output := Result{}
 	output.URL = httplink
 	timeout := time.Duration(10 * time.Second)
@@ -193,6 +202,14 @@ func actionWeight(f string) int {
 	}
 
 	return 1
+}
+
+// RedirectMiddleware will return an error on redirect if redirectWarnings == true
+func redirectMiddleware(req *http.Request, via []*http.Request) error {
+	if redirectWarnings {
+		return fmt.Errorf("%d redirect", req.Response.StatusCode)
+	}
+	return nil
 }
 
 // Debugging pretty print

@@ -10,13 +10,22 @@ func displayReport(results []Result) {
 	fmt.Printf("\033[2K\rScanned: %d links\nErrors:  %d\nTime:    %vs\n\n", linksProcessed, errorsProcessed, timeTaken)
 
 	for _, r := range results {
-		if r.StatusCode == 200 && len(r.Errors) == 0 && len(r.ValidationErrors) == 0 {
+		if r.StatusCode == 200 && len(r.Errors) == 0 && len(r.ValidationErrors) == 0 && r.Redirect == "" {
 			continue
 		}
 
 		fmt.Printf("---\n\n")
-		fmt.Printf("Link:    %s\n", r.URL)
-		fmt.Printf("Status:  %d (%s)\n", r.StatusCode, http.StatusText(r.StatusCode))
+
+		if r.Redirect != "" {
+			fmt.Printf("Link:    %s => %s\n", r.URL, r.Redirect)
+		} else {
+			fmt.Printf("Link:    %s\n", r.URL)
+		}
+
+		if r.StatusCode > 0 {
+			fmt.Printf("Status:  %d (%s)\n", r.StatusCode, http.StatusText(r.StatusCode))
+		}
+
 		if len(referers[r.URL]) > 0 {
 			if len(referers[r.URL]) > 3 {
 				fmt.Printf("Refs:    %s ... (%dx)\n", strings.Join(referers[r.URL][0:3], "\n         "), len(referers[r.URL]))
