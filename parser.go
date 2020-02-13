@@ -130,8 +130,6 @@ func fetchAndParse(httplink, action string, depth int) {
 					return
 				}
 			}
-			results = append(results, output)
-			return
 		}
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
 		results = append(results, output)
