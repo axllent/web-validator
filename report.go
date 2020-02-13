@@ -14,7 +14,7 @@ func displayReport(results []Result) {
 			continue
 		}
 
-		fmt.Println("---\n")
+		fmt.Printf("---\n\n")
 		fmt.Printf("Link:    %s\n", r.URL)
 		fmt.Printf("Status:  %d (%s)\n", r.StatusCode, http.StatusText(r.StatusCode))
 		if len(referers[r.URL]) > 0 {
