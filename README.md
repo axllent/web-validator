@@ -14,7 +14,7 @@ and verify outbound links.
 - Detect & checks linked assets from HTML & linked CSS (fonts, favicons, images, videos, etc)
 - Detect mixed content (HTTPS => HTTP) for linked assets (fonts, images, CSS, JS etc)
 - Verify outbound links (to external websites)
-- Summary report or errors (& optionally warnings)
+- Summary report or errors (& optionally HTML/CSS warnings)
 
 
 ## Usage options
@@ -38,6 +38,7 @@ Options:
   -v, --version            show app version
 ```
 
+
 ## Examples
 
 - `web-validator https://example.com/` - scan URL, verify all direct assets & links
@@ -58,7 +59,7 @@ or build from source `go get -u github.com/axllent/web-validator`(go >= 1.11 req
 
 ### When I scan a single page, web-validator scans many other pages too
 
-When scanning a page, the software will check all internal links from that single page, which include both pages and files. Only a HEAD request done on linked pages (no validation etc) to check for a response.
+When scanning a page, the software will check all internal links from that single page, which include both pages and files. Only a HEAD request is done on linked pages (no validation etc) to check for a valid response.
 
 
 ### Web-validator says some of my outbound links are broken, however they do work
