@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"sync"
 	"time"
 )
 
@@ -19,7 +20,9 @@ var (
 // HEAD a link to get the status of the URL
 // Note: some sites block HEAD, so if a HEAD fails with a 404 or 405 error
 // then a getResponse() is done (outbound links only)
-func head(httplink string) {
+func head(httplink string, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
 	output := Result{}
 	output.URL = httplink
 	timeout := time.Duration(10 * time.Second)
@@ -50,7 +53,7 @@ func head(httplink string) {
 				if err == nil {
 					output.Redirect = full
 					results = append(results, output)
-					addQueueLink(full, "head", httplink, 0)
+					addQueueLink(full, "head", httplink, 0, wg)
 					return
 				}
 			}
@@ -67,7 +70,7 @@ func head(httplink string) {
 		isOutbound := baseDomain != "" && getHost(httplink) != baseDomain
 
 		if isOutbound {
-			getResponse(httplink)
+			getResponse(httplink, wg)
 			return
 		}
 	}
@@ -82,7 +85,7 @@ func head(httplink string) {
 }
 
 // Fallback for failed HEAD requests
-func getResponse(httplink string) {
+func getResponse(httplink string, wg *sync.WaitGroup) {
 	output := Result{}
 	output.URL = httplink
 	timeout := time.Duration(10 * time.Second)
@@ -113,7 +116,7 @@ func getResponse(httplink string) {
 				if err == nil {
 					output.Redirect = full
 					results = append(results, output)
-					addQueueLink(full, "head", httplink, 0)
+					addQueueLink(full, "head", httplink, 0, wg)
 					return
 				}
 			}

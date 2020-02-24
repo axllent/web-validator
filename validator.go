@@ -47,10 +47,15 @@ func validate(output Result, body io.Reader, contentType string) Result {
 		return output
 	}
 
+	// Process only one request to validator at a time
+	validatorMutex.Lock()
+	defer validatorMutex.Unlock()
+
 	req, err := http.NewRequest("POST", htmlValidator, body)
 
 	if err != nil {
 		log.Fatal(err)
+		validatorMutex.Unlock()
 	}
 
 	req.Header.Set("User-Agent", "Web-validator")

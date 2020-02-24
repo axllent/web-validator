@@ -3,6 +3,7 @@
 ## [dev]
 
 - Add google to ignored links as they almost always redirect to login pages
+- Add goroutines & waitgroup for parallel processing
 
 
 ## [0.0.4]
