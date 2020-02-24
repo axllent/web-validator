@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -14,10 +15,12 @@ import (
 )
 
 var (
-	processed = make(map[string]int) // 1 = HEAD, 2 = GET
-	referers  = make(map[string][]string)
-	fileRegex = regexp.MustCompile(`(?i)\.(jpe?g|png|gif|svg|ico|pdf|docx?|xlsx?|zip|gz|bz2|tar|xz)$`)
-	urlRegex  = regexp.MustCompile(`url\((.*)\)`)
+	processed      = make(map[string]int) // 1 = HEAD, 2 = GET
+	referers       = make(map[string][]string)
+	mapMutex       = sync.RWMutex{}
+	validatorMutex = sync.RWMutex{}
+	fileRegex      = regexp.MustCompile(`(?i)\.(jpe?g|png|gif|svg|ico|pdf|swf|mp4|avi|mp3|ogg|mkv|docx?|xlsx?|zip|gz|bz2|tar|xz)$`)
+	urlRegex       = regexp.MustCompile(`url\((.*)\)`)
 )
 
 // Link struct for channel
@@ -37,7 +40,7 @@ type Result struct {
 }
 
 // Add a link to the queue.
-func addQueueLink(httplink, action, referer string, depth int) {
+func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGroup) {
 	if maxDepth != -1 && depth > maxDepth {
 		// prevent further parsing by simply doing a HEAD
 		action = "head"
@@ -49,6 +52,12 @@ func addQueueLink(httplink, action, referer string, depth int) {
 		}
 	}
 
+	wg.Add(1)
+	defer wg.Done()
+
+	// ensure only one process can read/write to processed map
+	mapMutex.Lock()
+
 	// check if we have processed this already
 	processType, found := processed[httplink]
 	if found && processType >= actionWeight(action) {
@@ -56,6 +65,7 @@ func addQueueLink(httplink, action, referer string, depth int) {
 		if referer != httplink && !stringInSlice(referer, referers[httplink]) {
 			referers[httplink] = append(referers[httplink], referer)
 		}
+		mapMutex.Unlock()
 	} else {
 		// enforce HEAD - prevent validating common files HTML / CSS
 		if action == "parse" && fileRegex.MatchString(httplink) {
@@ -75,25 +85,30 @@ func addQueueLink(httplink, action, referer string, depth int) {
 			referers[httplink] = []string{referer}
 		}
 
+		mapMutex.Unlock()
+
 		isOutbound := baseDomain != "" && getHost(httplink) != baseDomain
 
 		if isOutbound {
 			if checkOutbound {
-				head(httplink)
+				go head(httplink, wg)
 			} else {
 				linksProcessed--
-				return
 			}
 		} else if action == "parse" {
-			fetchAndParse(httplink, action, depth)
+			go fetchAndParse(httplink, action, depth, wg)
 		} else {
-			head(httplink)
+			go head(httplink, wg)
 		}
+		// add small delay to ensure goroutine registers wg.Add(1) before completion
+		time.Sleep(time.Millisecond * 100)
 	}
 }
 
 // FetchAndParse will action a remove file, and
-func fetchAndParse(httplink, action string, depth int) {
+func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
 	output := Result{}
 	output.URL = httplink
 	output.Type = action
@@ -126,7 +141,7 @@ func fetchAndParse(httplink, action string, depth int) {
 				if err == nil {
 					output.Redirect = full
 					results = append(results, output)
-					addQueueLink(full, action, httplink, depth)
+					addQueueLink(full, action, httplink, depth, wg)
 					return
 				}
 			}
@@ -202,7 +217,7 @@ func fetchAndParse(httplink, action string, depth int) {
 				if goquery.NodeName(s) == "iframe" {
 					fileType = "parse"
 				}
-				addQueueLink(full, fileType, httplink, depth)
+				addQueueLink(full, fileType, httplink, depth, wg)
 			}
 		})
 
@@ -218,7 +233,7 @@ func fetchAndParse(httplink, action string, depth int) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content link to CSS: %s", full))
 				}
-				addQueueLink(full, "parse", httplink, depth)
+				addQueueLink(full, "parse", httplink, depth, wg)
 			}
 		})
 
@@ -234,7 +249,7 @@ func fetchAndParse(httplink, action string, depth int) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to JS: %s", full))
 				}
-				addQueueLink(full, "head", httplink, depth)
+				addQueueLink(full, "head", httplink, depth, wg)
 			}
 		})
 
@@ -250,7 +265,7 @@ func fetchAndParse(httplink, action string, depth int) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
 				}
-				addQueueLink(full, "head", httplink, depth)
+				addQueueLink(full, "head", httplink, depth, wg)
 			}
 		})
 
@@ -265,9 +280,9 @@ func fetchAndParse(httplink, action string, depth int) {
 				isOutbound := baseDomain != "" && getHost(full) != baseDomain
 
 				if isOutbound {
-					addQueueLink(full, "head", httplink, depth)
+					addQueueLink(full, "head", httplink, depth, wg)
 				} else {
-					addQueueLink(full, "parse", httplink, depth+1)
+					addQueueLink(full, "parse", httplink, depth+1, wg)
 				}
 			}
 		})
@@ -305,7 +320,7 @@ func fetchAndParse(httplink, action string, depth int) {
 						errorsProcessed++
 						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to CSS: %s", full))
 					}
-					addQueueLink(full, "head", httplink, depth)
+					addQueueLink(full, "head", httplink, depth, wg)
 				}
 			}
 		}

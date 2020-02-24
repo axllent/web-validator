@@ -49,5 +49,6 @@ func displayReport(results []Result) {
 			fmt.Printf("  %4d)  [#%d] (%s) %s\n", errorNr, e.LastLine, e.Type, strings.TrimSpace(e.Message))
 		}
 		fmt.Println("")
+
 	}
 }
