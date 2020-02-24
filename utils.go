@@ -25,7 +25,7 @@ func head(httplink string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	output := Result{}
 	output.URL = httplink
-	timeout := time.Duration(10 * time.Second)
+	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
 
 	client := http.Client{
 		Timeout:       timeout,
@@ -88,7 +88,7 @@ func head(httplink string, wg *sync.WaitGroup) {
 func getResponse(httplink string, wg *sync.WaitGroup) {
 	output := Result{}
 	output.URL = httplink
-	timeout := time.Duration(10 * time.Second)
+	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
 
 	client := http.Client{
 		Timeout:       timeout,

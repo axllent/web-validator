@@ -113,7 +113,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 	output.URL = httplink
 	output.Type = action
 
-	timeout := time.Duration(10 * time.Second)
+	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
 
 	client := http.Client{
 		Timeout:       timeout,

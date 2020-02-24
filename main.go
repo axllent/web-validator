@@ -30,6 +30,7 @@ var (
 	update           bool
 	showVersion      bool
 	ignoreURLs       string
+	timeoutSeconds   int
 	appVersion       = "dev"
 	userAgent        = "Web-validator"
 	linksProcessed   = 0
@@ -61,6 +62,7 @@ func main() {
 	flag.BoolVarP(&redirectWarnings, "redirects", "r", false, "display redirects")
 	flag.BoolVarP(&showWarnigs, "warnings", "w", false, "display validation warnings (default errors only)")
 	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -r -o --html --css\")")
+	flag.IntVarP(&timeoutSeconds, "timeout", "t", 10, "timeout in seconds")
 	flag.StringVar(&htmlValidator, "validator", htmlValidator, "Nu Html validator")
 	flag.BoolVarP(&update, "update", "u", false, "update to latest release")
 	flag.BoolVarP(&showVersion, "version", "v", false, "show app version")
