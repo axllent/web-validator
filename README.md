@@ -44,7 +44,7 @@ Options:
 - `web-validator https://example.com/ --css --html` - scan URL, verify all direct assets & links, validate HTML & CSS
 - `web-validator https://example.com/ -a` - scan entire site, verify assets & links
 - `web-validator https://example.com/ --css --html -d 2` - scan site to a depth of 2 internal links, verify assets & links, validate HTML and CSS
-- `web-validator https://example.com/ -e` - scan entire site, verify all assets, verify outbound links
+- `web-validator https://example.com/ -a -o` - scan entire site, verify all assets, verify outbound links
 - `web-validator https://example.com/ -f` - scan entire site, verify all assets, verify outbound links, validate HTML & CSS
 
 
