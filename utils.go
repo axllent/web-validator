@@ -10,7 +10,10 @@ import (
 )
 
 var (
-	ignoreMatches = []*regexp.Regexp{regexp.MustCompile(`^https?://(www\.)(linkedin\.com)`)}
+	ignoreMatches = []*regexp.Regexp{
+		regexp.MustCompile(`^https?://(www\.)?linkedin\.com`),
+		regexp.MustCompile(`^https://(.*)\.google\.com`),
+	}
 )
 
 // HEAD a link to get the status of the URL
