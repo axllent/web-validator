@@ -32,6 +32,7 @@ Options:
   -r, --redirects          display redirects
   -w, --warnings           display validation warnings (default errors only)
   -f, --full               full scan (same as "-a -r -o --html --css")
+  -t, --timeout int        timeout in seconds (default 10)
       --validator string   Nu Html validator (default "https://validator.w3.org/nu/")
   -u, --update             update to latest release
   -v, --version            show app version
