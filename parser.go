@@ -137,7 +137,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 			loc := res.Header.Get("Location")
 			output.StatusCode = res.StatusCode
 			if loc != "" {
-				full, err := absoluteURL(loc, httplink, false)
+				full, err := absoluteURL(loc, httplink)
 				if err == nil {
 					output.Redirect = full
 					results = append(results, output)
@@ -193,7 +193,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 
 		doc.Find("base").Each(func(i int, s *goquery.Selection) {
 			if link, ok := s.Attr("href"); ok {
-				full, err := absoluteURL(link, httplink, true)
+				full, err := absoluteURL(link, httplink)
 				if err == nil {
 					baseLink = full
 				}
@@ -203,7 +203,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		// IMAGES/VIDEOS/AUDIO/IFRAME
 		doc.Find("img,embed,source,iframe").Each(func(i int, s *goquery.Selection) {
 			if link, ok := s.Attr("src"); ok {
-				full, err := absoluteURL(link, baseLink, false)
+				full, err := absoluteURL(link, baseLink)
 				if err != nil {
 					fmt.Println(err)
 					return
@@ -224,7 +224,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		// CSS
 		doc.Find("link[rel=\"stylesheet\"]").Each(func(i int, s *goquery.Selection) {
 			if link, ok := s.Attr("href"); ok {
-				full, err := absoluteURL(link, baseLink, false)
+				full, err := absoluteURL(link, baseLink)
 				if err != nil {
 					fmt.Println(err)
 					return
@@ -240,7 +240,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		// JS
 		doc.Find("script").Each(func(i int, s *goquery.Selection) {
 			if link, ok := s.Attr("src"); ok {
-				full, err := absoluteURL(link, baseLink, false)
+				full, err := absoluteURL(link, baseLink)
 				if err != nil {
 					fmt.Println(err)
 					return
@@ -256,7 +256,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		// FAVICONS
 		doc.Find("link[rel=\"icon\"], link[rel=\"shortcut icon\"], link[rel=\"apple-touch-icon\"]").Each(func(i int, s *goquery.Selection) {
 			if link, ok := s.Attr("href"); ok {
-				full, err := absoluteURL(link, baseLink, false)
+				full, err := absoluteURL(link, baseLink)
 				if err != nil {
 					fmt.Println(err)
 					return
@@ -272,7 +272,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		// LINKS
 		doc.Find("a").Each(func(i int, s *goquery.Selection) {
 			if link, ok := s.Attr("href"); ok {
-				full, err := absoluteURL(link, baseLink, true)
+				full, err := absoluteURL(link, baseLink)
 				if err != nil {
 					return
 				}
@@ -311,7 +311,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 					link = strings.Replace(link, "'", "", -1)
 					link = strings.Replace(link, "\"", "", -1)
 
-					full, err := absoluteURL(link, httplink, false)
+					full, err := absoluteURL(link, httplink)
 					if err != nil {
 						// ignore failed asset links as they could be binary strings for svg etc
 						continue
