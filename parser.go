@@ -52,11 +52,14 @@ func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGrou
 		}
 	}
 
+	threads <- 1 // will block if there is MAX ints in threads
+
 	wg.Add(1)
 	defer wg.Done()
 
 	// ensure only one process can read/write to processed map
 	mapMutex.Lock()
+	defer mapMutex.Unlock()
 
 	// check if we have processed this already
 	processType, found := processed[httplink]
@@ -65,7 +68,6 @@ func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGrou
 		if referer != httplink && !stringInSlice(referer, referers[httplink]) {
 			referers[httplink] = append(referers[httplink], referer)
 		}
-		mapMutex.Unlock()
 	} else {
 		// enforce HEAD - prevent validating common files HTML / CSS
 		if action == "parse" && fileRegex.MatchString(httplink) {
@@ -85,8 +87,6 @@ func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGrou
 			referers[httplink] = []string{referer}
 		}
 
-		mapMutex.Unlock()
-
 		isOutbound := baseDomain != "" && getHost(httplink) != baseDomain
 
 		if isOutbound {
@@ -103,6 +103,8 @@ func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGrou
 		// add small delay to ensure goroutine registers wg.Add(1) before completion
 		time.Sleep(time.Millisecond * 100)
 	}
+
+	<-threads // removes an int from threads, allowing another to proceed
 }
 
 // FetchAndParse will action a remove file, and

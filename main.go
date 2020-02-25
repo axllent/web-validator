@@ -31,6 +31,7 @@ var (
 	showVersion      bool
 	ignoreURLs       string
 	timeoutSeconds   int
+	threads          chan int
 	appVersion       = "dev"
 	userAgent        = "Web-validator"
 	linksProcessed   = 0
@@ -40,6 +41,7 @@ var (
 func main() {
 
 	showHelp := false
+	var nrThreads int
 
 	userAgent = fmt.Sprintf("Web-validator/%s", appVersion)
 
@@ -59,10 +61,11 @@ func main() {
 	flag.BoolVar(&validateHTML, "html", false, "validate HTML")
 	flag.BoolVar(&validateCSS, "css", false, "validate CSS")
 	flag.StringVarP(&ignoreURLs, "ignore", "i", "", "ignore URLs, comma-separated, wildcards allowed (*.jpg,example.com)")
-	flag.BoolVarP(&redirectWarnings, "redirects", "r", false, "display redirects")
+	flag.BoolVarP(&redirectWarnings, "redirects", "r", false, "treat redirects as errors")
 	flag.BoolVarP(&showWarnigs, "warnings", "w", false, "display validation warnings (default errors only)")
 	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -r -o --html --css\")")
-	flag.IntVarP(&timeoutSeconds, "timeout", "t", 10, "timeout in seconds")
+	flag.IntVarP(&nrThreads, "threads", "t", 5, "number of threads")
+	flag.IntVar(&timeoutSeconds, "timeout", 10, "timeout in seconds")
 	flag.StringVar(&htmlValidator, "validator", htmlValidator, "Nu Html validator")
 	flag.BoolVarP(&update, "update", "u", false, "update to latest release")
 	flag.BoolVarP(&showVersion, "version", "v", false, "show app version")
@@ -147,6 +150,8 @@ func main() {
 		fmt.Printf("Please use a full URL: %s\n", args[0])
 		os.Exit(2)
 	}
+
+	threads = make(chan int, nrThreads)
 
 	start := time.Now()
 

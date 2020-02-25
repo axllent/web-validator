@@ -2,7 +2,8 @@
 
 ## [dev]
 
-- Add timeout configuration
+- Add `--timeout` configuration
+- Add `-t` thread limit (default 5) 
 
 
 ## [0.0.5]
