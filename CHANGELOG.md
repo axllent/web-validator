@@ -1,6 +1,6 @@
 # Changelog
 
-## [dev]
+## [0.0.6]
 
 - Add `--timeout` configuration
 - Add `-t` thread limit (default 5) 
