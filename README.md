@@ -14,7 +14,7 @@ and verify outbound links.
 - Detect & checks linked assets from HTML & linked CSS (fonts, favicons, images, videos, etc)
 - Detect mixed content (HTTPS => HTTP) for linked assets (fonts, images, CSS, JS etc)
 - Verify outbound links (to external websites)
-- Summary report or errors (& optionally warnings)
+- Summary report or errors (& optionally HTML/CSS warnings)
 
 
 ## Usage options
@@ -29,13 +29,16 @@ Options:
       --html               validate HTML
       --css                validate CSS
   -i, --ignore string      ignore URLs, comma-separated, wildcards allowed (*.jpg,example.com)
-  -r, --redirects          display redirects
+  -r, --redirects          treat redirects as errors
   -w, --warnings           display validation warnings (default errors only)
   -f, --full               full scan (same as "-a -r -o --html --css")
+  -t, --threads int        number of threads (default 5)
+      --timeout int        timeout in seconds (default 10)
       --validator string   Nu Html validator (default "https://validator.w3.org/nu/")
   -u, --update             update to latest release
   -v, --version            show app version
 ```
+
 
 ## Examples
 
@@ -43,7 +46,7 @@ Options:
 - `web-validator https://example.com/ --css --html` - scan URL, verify all direct assets & links, validate HTML & CSS
 - `web-validator https://example.com/ -a` - scan entire site, verify assets & links
 - `web-validator https://example.com/ --css --html -d 2` - scan site to a depth of 2 internal links, verify assets & links, validate HTML and CSS
-- `web-validator https://example.com/ -e` - scan entire site, verify all assets, verify outbound links
+- `web-validator https://example.com/ -a -o` - scan entire site, verify all assets, verify outbound links
 - `web-validator https://example.com/ -f` - scan entire site, verify all assets, verify outbound links, validate HTML & CSS
 
 
@@ -57,7 +60,7 @@ or build from source `go get -u github.com/axllent/web-validator`(go >= 1.11 req
 
 ### When I scan a single page, web-validator scans many other pages too
 
-When scanning a page, the software will check all internal links from that single page, which include both pages and files. Only a HEAD request done on linked pages (no validation etc) to check for a response.
+When scanning a page, the software will check all internal links from that single page, which include both pages and files. Only a HEAD request is done on linked pages (no validation etc) to check for a valid response.
 
 
 ### Web-validator says some of my outbound links are broken, however they do work

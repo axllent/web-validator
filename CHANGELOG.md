@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.0.6]
+
+- Add `--timeout` configuration
+- Add `-t` thread limit (default 5) 
+
+
 ## [0.0.5]
 
 - Add google to ignored links as they almost always redirect to login pages

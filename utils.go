@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -25,7 +26,7 @@ func head(httplink string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	output := Result{}
 	output.URL = httplink
-	timeout := time.Duration(10 * time.Second)
+	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
 
 	client := http.Client{
 		Timeout:       timeout,
@@ -49,7 +50,7 @@ func head(httplink string, wg *sync.WaitGroup) {
 			loc := res.Header.Get("Location")
 			output.StatusCode = res.StatusCode
 			if loc != "" {
-				full, err := absoluteURL(loc, httplink, false)
+				full, err := absoluteURL(loc, httplink)
 				if err == nil {
 					output.Redirect = full
 					results = append(results, output)
@@ -88,7 +89,7 @@ func head(httplink string, wg *sync.WaitGroup) {
 func getResponse(httplink string, wg *sync.WaitGroup) {
 	output := Result{}
 	output.URL = httplink
-	timeout := time.Duration(10 * time.Second)
+	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
 
 	client := http.Client{
 		Timeout:       timeout,
@@ -112,7 +113,7 @@ func getResponse(httplink string, wg *sync.WaitGroup) {
 			loc := res.Header.Get("Location")
 			output.StatusCode = res.StatusCode
 			if loc != "" {
-				full, err := absoluteURL(loc, httplink, false)
+				full, err := absoluteURL(loc, httplink)
 				if err == nil {
 					output.Redirect = full
 					results = append(results, output)
@@ -147,7 +148,7 @@ func getHost(httplink string) string {
 }
 
 // AbsoluteURL will return a full URL regardless whether it is relative or absolute
-func absoluteURL(link, baselink string, isHTML bool) (string, error) {
+func absoluteURL(link, baselink string) (string, error) {
 	u, err := url.Parse(link)
 	if err != nil {
 		return link, err
@@ -169,7 +170,8 @@ func absoluteURL(link, baselink string, isHTML bool) (string, error) {
 	result := base.ResolveReference(u)
 
 	// ensure link is HTTP(S)
-	if result.Scheme != "http" && result.Scheme != "https" {
+	if (result.Scheme != "http" && result.Scheme != "https") ||
+		strings.HasPrefix(result.Path, "//") {
 		return link, fmt.Errorf("Invalid URL: %s", result.String())
 	}
 
