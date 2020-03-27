@@ -16,6 +16,8 @@ var (
 		regexp.MustCompile(`^https?://(www\.)?linkedin\.com`),
 		regexp.MustCompile(`^https://(.*)\.google\.com`),
 	}
+
+	cssURLmatches = regexp.MustCompile(`(?mU)\burl\((.*)\)`)
 )
 
 // HEAD a link to get the status of the URL
@@ -237,4 +239,26 @@ func redirectMiddleware(req *http.Request, via []*http.Request) error {
 func prettyPrint(i interface{}) {
 	s, _ := json.MarshalIndent(i, "", "\t")
 	fmt.Println(string(s))
+}
+
+// CSS URL
+func extractStyleURLs(body string) []string {
+	results := []string{}
+	matches := cssURLmatches.FindAllStringSubmatch(body, -1)
+	for _, res := range matches {
+		url := strings.TrimSpace(res[1])
+		// strip quotes left
+		if len(url) > 0 && url[0] == '"' || url[0] == '\'' {
+			url = url[1:]
+		}
+		// strip quotes right
+		if len(url) > 0 && url[len(url)-1] == '"' || url[len(url)-1] == '\'' {
+			url = url[:len(url)-1]
+		}
+		if len(url) > 0 {
+			results = append(results, url)
+		}
+	}
+
+	return results
 }

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/gorilla/css/scanner"
 )
 
 var (
@@ -20,7 +19,6 @@ var (
 	mapMutex       = sync.RWMutex{}
 	validatorMutex = sync.RWMutex{}
 	fileRegex      = regexp.MustCompile(`(?i)\.(jpe?g|png|gif|svg|ico|pdf|swf|mp4|avi|mp3|ogg|mkv|docx?|xlsx?|zip|gz|bz2|tar|xz)$`)
-	urlRegex       = regexp.MustCompile(`url\((.*)\)`)
 )
 
 // Link struct for channel
@@ -44,6 +42,11 @@ func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGrou
 	if maxDepth != -1 && depth > maxDepth {
 		// prevent further parsing by simply doing a HEAD
 		action = "head"
+	}
+
+	// remove trailing ? or #
+	if len(httplink) > 0 && httplink[len(httplink)-1] == '?' || httplink[len(httplink)-1] == '#' {
+		httplink = httplink[:len(httplink)-1]
 	}
 
 	for _, r := range ignoreMatches {
@@ -288,6 +291,40 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 				}
 			}
 		})
+
+		// INLINE STYLE BLOCKS
+		doc.Find("style").Each(func(i int, s *goquery.Selection) {
+			raw := s.Text()
+			for _, link := range extractStyleURLs(raw) {
+				full, err := absoluteURL(link, baseLink)
+				if err != nil {
+					break
+				}
+				if isMixedContent(httplink, full) {
+					errorsProcessed++
+					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
+				}
+				addQueueLink(full, "head", httplink, depth, wg)
+			}
+		})
+
+		// INLINE STYLES
+		doc.Find("*[style]").Each(func(i int, s *goquery.Selection) {
+			if style, ok := s.Attr("style"); ok {
+				for _, link := range extractStyleURLs(style) {
+					full, err := absoluteURL(link, baseLink)
+					if err != nil {
+						return
+					}
+					if isMixedContent(httplink, full) {
+						errorsProcessed++
+						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
+					}
+					addQueueLink(full, "head", httplink, depth, wg)
+				}
+			}
+		})
+
 	}
 
 	// CSS
@@ -297,34 +334,16 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		// validate the CSS
 		output = validate(output, r, res.Header.Get("Content-Type"))
 
-		s := scanner.New(string(body))
-
-		for {
-			token := s.Next()
-			if token.Type == scanner.TokenEOF || token.Type == scanner.TokenError {
-				break
+		for _, link := range extractStyleURLs(string(body)) {
+			full, err := absoluteURL(link, httplink)
+			if err != nil {
+				return
 			}
-
-			if token.Type == scanner.TokenURI {
-				matches := urlRegex.FindStringSubmatch(token.Value)
-				if len(matches) > 0 {
-					link := matches[1]
-					// strip quotes off url() links
-					link = strings.Replace(link, "'", "", -1)
-					link = strings.Replace(link, "\"", "", -1)
-
-					full, err := absoluteURL(link, httplink)
-					if err != nil {
-						// ignore failed asset links as they could be binary strings for svg etc
-						continue
-					}
-					if isMixedContent(httplink, full) {
-						errorsProcessed++
-						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to CSS: %s", full))
-					}
-					addQueueLink(full, "head", httplink, depth, wg)
-				}
+			if isMixedContent(httplink, full) {
+				errorsProcessed++
+				output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
 			}
+			addQueueLink(full, "head", httplink, depth, wg)
 		}
 	}
 
