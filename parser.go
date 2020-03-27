@@ -52,6 +52,12 @@ func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGrou
 		}
 	}
 
+	isOutbound := baseDomain != "" && getHost(httplink) != baseDomain
+
+	if isOutbound && !checkOutbound {
+		return
+	}
+
 	threads <- 1 // will block if there is MAX ints in threads
 
 	wg.Add(1)
@@ -87,14 +93,8 @@ func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGrou
 			referers[httplink] = []string{referer}
 		}
 
-		isOutbound := baseDomain != "" && getHost(httplink) != baseDomain
-
 		if isOutbound {
-			if checkOutbound {
-				go head(httplink, wg)
-			} else {
-				linksProcessed--
-			}
+			go head(httplink, wg)
 		} else if action == "parse" {
 			go fetchAndParse(httplink, action, depth, wg)
 		} else {
