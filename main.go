@@ -80,6 +80,7 @@ func main() {
 	if showHelp {
 		fmt.Printf("Web-validator %s, validate website HTML & CSS, check links & resources.\n\n", appVersion)
 		flag.Usage()
+		fmt.Println("")
 		os.Exit(0)
 	}
 
