@@ -151,6 +151,15 @@ func getHost(httplink string) string {
 
 // AbsoluteURL will return a full URL regardless whether it is relative or absolute
 func absoluteURL(link, baselink string) (string, error) {
+	// scheme relative links, eg <script src="//example.com/script.js">
+	if link[0:2] == "//" {
+		base, err := url.Parse(baselink)
+		if err != nil {
+			return link, err
+		}
+		link = base.Scheme + ":" + link
+	}
+
 	u, err := url.Parse(link)
 	if err != nil {
 		return link, err
@@ -172,8 +181,7 @@ func absoluteURL(link, baselink string) (string, error) {
 	result := base.ResolveReference(u)
 
 	// ensure link is HTTP(S)
-	if (result.Scheme != "http" && result.Scheme != "https") ||
-		strings.HasPrefix(result.Path, "//") {
+	if result.Scheme != "http" && result.Scheme != "https" {
 		return link, fmt.Errorf("Invalid URL: %s", result.String())
 	}
 
