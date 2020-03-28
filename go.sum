@@ -7,6 +7,8 @@ github.com/axllent/ghru v1.2.0/go.mod h1:rFvMhcO1UAv2Cv6bXscS8EOc7qqNpfe8ZLp23ut
 github.com/axllent/semver v0.0.0-20191103011746-394cefa91ee9/go.mod h1:2xSPzvG8n9mRfdtxSvWvfTfQGWfHsMsHO1iZnKATMSc=
 github.com/axllent/semver v0.0.1 h1:QqF+KSGxgj8QZzSXAvKFqjGWE5792ksOnQhludToK8E=
 github.com/axllent/semver v0.0.1/go.mod h1:2xSPzvG8n9mRfdtxSvWvfTfQGWfHsMsHO1iZnKATMSc=
+github.com/lukasbob/srcset v0.0.0-20190730101422-86b742e617f3 h1:l1rIRmxNhzeQM+qA3D0CsDLo0Hx45q9JmK0BlCjt6Ks=
+github.com/lukasbob/srcset v0.0.0-20190730101422-86b742e617f3/go.mod h1:j16TYl5p17+vBMyaL6Nu4ojlOnfX8lc2k2cfmw6m5TQ=
 github.com/spf13/pflag v1.0.5/go.mod h1:McXfInJRrz4CZXVZOBLb0bTZqETkiAhM9Iw0y3An2Bg=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/net v0.0.0-20180218175443-cbe0f9307d01/go.mod h1:mL1N/T3taQHkDXs73rZJwtUhF3w3ftmwwsq0BUmARs4=

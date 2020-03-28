@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/lukasbob/srcset"
 )
 
 var (
@@ -210,7 +211,6 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 			if link, ok := s.Attr("src"); ok {
 				full, err := absoluteURL(link, baseLink)
 				if err != nil {
-					fmt.Println(err)
 					return
 				}
 				if isMixedContent(httplink, full) {
@@ -223,6 +223,23 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 					fileType = "parse"
 				}
 				addQueueLink(full, fileType, httplink, depth, wg)
+			}
+
+			if link, ok := s.Attr("srcset"); ok {
+				// srcset may contain multiple urls
+				srcLinks := srcset.Parse(link)
+				for _, src := range srcLinks {
+					link := src.URL
+					full, err := absoluteURL(link, baseLink)
+					if err != nil {
+						return
+					}
+					if isMixedContent(httplink, full) {
+						errorsProcessed++
+						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to file: %s", full))
+					}
+					addQueueLink(full, "head", httplink, depth, wg)
+				}
 			}
 		})
 
