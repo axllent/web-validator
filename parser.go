@@ -280,7 +280,21 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 			if link, ok := s.Attr("href"); ok {
 				full, err := absoluteURL(link, baseLink)
 				if err != nil {
-					fmt.Println(err)
+					return
+				}
+				if isMixedContent(baseLink, full) {
+					errorsProcessed++
+					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
+				}
+				addQueueLink(full, "head", httplink, depth, wg)
+			}
+		})
+
+		// OPEN GRAPH IMAGES
+		doc.Find("meta[property$=\":image\"], meta[name$=\":image\"]").Each(func(i int, s *goquery.Selection) {
+			if link, ok := s.Attr("content"); ok {
+				full, err := absoluteURL(link, baseLink)
+				if err != nil {
 					return
 				}
 				if isMixedContent(baseLink, full) {
