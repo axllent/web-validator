@@ -152,7 +152,7 @@ func getHost(httplink string) string {
 // AbsoluteURL will return a full URL regardless whether it is relative or absolute
 func absoluteURL(link, baselink string) (string, error) {
 	// scheme relative links, eg <script src="//example.com/script.js">
-	if link[0:2] == "//" {
+	if len(link) > 1 && link[0:2] == "//" {
 		base, err := url.Parse(baselink)
 		if err != nil {
 			return link, err
