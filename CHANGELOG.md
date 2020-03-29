@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.9]
+
+- Fix valication error counts
+
+
 ## [0.0.8]
 
 - Bugfix for scheme relative links

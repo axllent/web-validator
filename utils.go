@@ -82,6 +82,7 @@ func head(httplink string, wg *sync.WaitGroup) {
 
 	if output.StatusCode != 200 {
 		errorsProcessed++
+		output.Errors = append(output.Errors, fmt.Sprintf("returned status %d", output.StatusCode))
 	}
 
 	results = append(results, output)
@@ -135,6 +136,7 @@ func getResponse(httplink string, wg *sync.WaitGroup) {
 
 	if output.StatusCode != 200 {
 		errorsProcessed++
+		output.Errors = append(output.Errors, fmt.Sprintf("returned status %d", output.StatusCode))
 	}
 
 	results = append(results, output)

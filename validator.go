@@ -70,35 +70,34 @@ func validate(output Result, body io.Reader, contentType string) Result {
 	res, err := client.Do(req)
 	if err != nil {
 		output.Errors = append(output.Errors, fmt.Sprintf("Validator: %s", err))
-		results = append(results, output)
 		return output
 	}
+
 	defer res.Body.Close()
 
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		output.Errors = append(output.Errors, fmt.Sprintf("Validator: %s", err))
-		results = append(results, output)
 		return output
 	}
 
 	if res.StatusCode != 200 {
 		output.Errors = append(output.Errors, fmt.Sprintf("Validator: %s returned a %d (%s) response", htmlValidator, res.StatusCode, http.StatusText(res.StatusCode)))
-		results = append(results, output)
 		return output
 	}
 
 	response := NuJSONStruct{}
 	jsonErr := json.Unmarshal(data, &response)
 	if jsonErr != nil {
+		errorsProcessed++
 		output.Errors = append(output.Errors, fmt.Sprintf("Error parsing response from %s: %s", htmlValidator, string(data)))
 		return output
 	}
 
 	for _, msg := range response.Messages {
 		if msg.Type == "error" || (showWarnigs && msg.Type == "info") {
-			output.ValidationErrors = append(output.ValidationErrors, msg)
 			errorsProcessed++
+			output.ValidationErrors = append(output.ValidationErrors, msg)
 		}
 	}
 
