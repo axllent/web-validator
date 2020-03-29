@@ -372,7 +372,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		for _, link := range extractStyleURLs(string(body)) {
 			full, err := absoluteURL(link, httplink)
 			if err != nil {
-				return
+				continue
 			}
 			if isMixedContent(httplink, full) {
 				errorsProcessed++
