@@ -16,6 +16,8 @@ var (
 		regexp.MustCompile(`^https?://(www\.)?linkedin\.com`),
 		regexp.MustCompile(`^https://(.*)\.google\.com`),
 	}
+
+	cssURLmatches = regexp.MustCompile(`(?mU)\burl\((.*)\)`)
 )
 
 // HEAD a link to get the status of the URL
@@ -149,6 +151,15 @@ func getHost(httplink string) string {
 
 // AbsoluteURL will return a full URL regardless whether it is relative or absolute
 func absoluteURL(link, baselink string) (string, error) {
+	// scheme relative links, eg <script src="//example.com/script.js">
+	if link[0:2] == "//" {
+		base, err := url.Parse(baselink)
+		if err != nil {
+			return link, err
+		}
+		link = base.Scheme + ":" + link
+	}
+
 	u, err := url.Parse(link)
 	if err != nil {
 		return link, err
@@ -170,8 +181,7 @@ func absoluteURL(link, baselink string) (string, error) {
 	result := base.ResolveReference(u)
 
 	// ensure link is HTTP(S)
-	if (result.Scheme != "http" && result.Scheme != "https") ||
-		strings.HasPrefix(result.Path, "//") {
+	if result.Scheme != "http" && result.Scheme != "https" {
 		return link, fmt.Errorf("Invalid URL: %s", result.String())
 	}
 
@@ -237,4 +247,26 @@ func redirectMiddleware(req *http.Request, via []*http.Request) error {
 func prettyPrint(i interface{}) {
 	s, _ := json.MarshalIndent(i, "", "\t")
 	fmt.Println(string(s))
+}
+
+// CSS URL
+func extractStyleURLs(body string) []string {
+	results := []string{}
+	matches := cssURLmatches.FindAllStringSubmatch(body, -1)
+	for _, res := range matches {
+		url := strings.TrimSpace(res[1])
+		// strip quotes left
+		if len(url) > 0 && url[0] == '"' || url[0] == '\'' {
+			url = url[1:]
+		}
+		// strip quotes right
+		if len(url) > 0 && url[len(url)-1] == '"' || url[len(url)-1] == '\'' {
+			url = url[:len(url)-1]
+		}
+		if len(url) > 0 {
+			results = append(results, url)
+		}
+	}
+
+	return results
 }

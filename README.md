@@ -15,6 +15,7 @@ and verify outbound links.
 - Detect mixed content (HTTPS => HTTP) for linked assets (fonts, images, CSS, JS etc)
 - Verify outbound links (to external websites)
 - Summary report or errors (& optionally HTML/CSS warnings)
+- Obeys `robots.txt` (can be ignored)
 
 
 ## Usage options
@@ -29,6 +30,7 @@ Options:
       --html               validate HTML
       --css                validate CSS
   -i, --ignore string      ignore URLs, comma-separated, wildcards allowed (*.jpg,example.com)
+  -n, --no-robots          ignore robots.txt (if exists)
   -r, --redirects          treat redirects as errors
   -w, --warnings           display validation warnings (default errors only)
   -f, --full               full scan (same as "-a -r -o --html --css")
@@ -71,3 +73,13 @@ Some sites specificaly block all HEAD requests, in which case web-validator will
 ### HTML/CSS validation
 
 Validation uses the [Nu Html validator]("https://validator.w3.org/nu/"), and by default uses the online public service (they [encourage this](https://github.com/validator/validator/wiki/Service-%C2%BB-Input-%C2%BB-POST-body)). You can however use your [own instance](https://validator.w3.org/docs/users.html) of the validator (open source), and use the `--validator <your-server>` to specify your own.
+
+
+### Robots.txt
+
+By default, web-validator obeys `Disallow` rules in `robots.txt` if it exists. You can optionally skip this by adding `-n` to your runtime flags. To add specific rules for just the validator, you can target it specifically with `User-agent: web-validator`, eg:
+
+```
+User-agent: web-validator
+Disallow: /assets/Products/*
+```
