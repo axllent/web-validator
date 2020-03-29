@@ -40,6 +40,10 @@ type Result struct {
 
 // Add a link to the queue.
 func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGroup) {
+	if !robotsAllowed(httplink) {
+		return
+	}
+
 	if maxDepth != -1 && depth > maxDepth {
 		// prevent further parsing by simply doing a HEAD
 		action = "head"
