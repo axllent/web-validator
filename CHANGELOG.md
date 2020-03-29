@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.0.7]
+
+- Do not show ignored outbound links
+- Parse inline CSS & CSS block urls (`url("image.jpg")`)
+- Add support for `srcset` links
+- Add support for Open Graph images
+- Add support for scheme relative links, eg `<script src="//example.com/script.js">`
+- Add support for `robots.txt`
+
+
 ## [0.0.6]
 
 - Add `--timeout` configuration
