@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.0.8]
+
+- Bugfix for scheme relative links
+
+
 ## [0.0.7]
 
 - Do not show ignored outbound links
