@@ -2,7 +2,7 @@
 
 ## [0.0.9]
 
-- Fix valication error counts
+- Fix validation error counts
 
 
 ## [0.0.8]
