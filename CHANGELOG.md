@@ -1,8 +1,13 @@
 # Changelog
 
+## [0.1.0]
+
+- Display results if process is cancelled (ctrl-c)
+
+
 ## [0.0.9]
 
-- Fix valication error counts
+- Fix validation error counts
 
 
 ## [0.0.8]
