@@ -7,11 +7,11 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/samclarke/robotstxt"
+	"github.com/jimsmart/grobotstxt"
 )
 
 var (
-	robots *robotstxt.RobotsTxt
+	robotsContent string
 )
 
 // Set up robots.txt exclusions if allowed and exists
@@ -61,11 +61,7 @@ func initRobotsTxt(startURL string) {
 		return
 	}
 
-	robots, err = robotstxt.Parse(string(body), robotsURL)
-	if err != nil {
-		noRobots = true
-		return
-	}
+	robotsContent = string(body)
 }
 
 // Test if allowed in robots.txt
@@ -78,7 +74,5 @@ func robotsAllowed(url string) bool {
 		return true
 	}
 
-	allowed, _ := robots.IsAllowed("web-validator", url)
-
-	return allowed
+	return grobotstxt.AgentAllowed(robotsContent, "web-validator", url)
 }
