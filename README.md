@@ -67,7 +67,7 @@ When scanning a page, the software will check all internal links from that singl
 
 ### Web-validator says some of my outbound links are broken, however they do work
 
-Some sites specificaly block all HEAD requests, in which case web-validator will try a regular GET request. Some sites however go to extreme lengths to prevent any kind of scraping, such as LinkedIn, so these will always return an error response. LinkedIn (specifically) is now blacklisted in the application, so any linkedin links are completely ignored. If you come across another major site with similar issues, then let me know and I will add them to the list.
+Some sites specifically block all HEAD requests, in which case web-validator will try a regular GET request. Some sites however go to extreme lengths to prevent any kind of scraping, such as LinkedIn, so these will always return an error response. LinkedIn (specifically) is now blacklisted in the application, so any linkedin links are completely ignored. If you come across another major site with similar issues, then let me know and I will add them to the list.
 
 
 ### HTML/CSS validation

@@ -1,8 +1,13 @@
 # Changelog
 
+## [dev]
+
+- Switch to more reliable [grobotstxt](https://github.com/jimsmart/grobotstxt)
+
+
 ## [0.1.0]
 
-- Display results if process is cancelled (ctrl-c)
+- Display results if process is canceled (ctrl-c)
 
 
 ## [0.0.9]
