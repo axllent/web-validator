@@ -1,6 +1,11 @@
 # Changelog
 
-## [dev]
+## [0.1.2]
+
+- Update core modules
+
+
+## [0.1.1]
 
 - Switch to more reliable [grobotstxt](https://github.com/jimsmart/grobotstxt)
 
