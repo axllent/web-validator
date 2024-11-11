@@ -24,11 +24,11 @@ var (
 // HEAD a link to get the status of the URL
 // Note: some sites block HEAD, so if a HEAD fails with a 404 or 405 error
 // then a getResponse() is done (outbound links only)
-func head(httplink string, wg *sync.WaitGroup) {
+func head(httpLink string, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
 	output := Result{}
-	output.URL = httplink
+	output.URL = httpLink
 	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
 
 	client := http.Client{
@@ -36,7 +36,7 @@ func head(httplink string, wg *sync.WaitGroup) {
 		CheckRedirect: redirectMiddleware,
 	}
 
-	req, err := http.NewRequest("HEAD", httplink, nil)
+	req, err := http.NewRequest("HEAD", httpLink, nil)
 	if err != nil {
 		errorsProcessed++
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
@@ -53,11 +53,11 @@ func head(httplink string, wg *sync.WaitGroup) {
 			loc := res.Header.Get("Location")
 			output.StatusCode = res.StatusCode
 			if loc != "" {
-				full, err := absoluteURL(loc, httplink)
+				full, err := absoluteURL(loc, httpLink)
 				if err == nil {
 					output.Redirect = full
 					results = append(results, output)
-					addQueueLink(full, "head", httplink, 0, wg)
+					addQueueLink(full, "head", httpLink, 0, wg)
 					return
 				}
 			}
@@ -71,10 +71,10 @@ func head(httplink string, wg *sync.WaitGroup) {
 
 	// some hosts block HEAD requests, so we do a standard GET instead
 	if res.StatusCode == 404 || res.StatusCode == 405 {
-		isOutbound := baseDomain != "" && getHost(httplink) != baseDomain
+		isOutbound := baseDomain != "" && getHost(httpLink) != baseDomain
 
 		if isOutbound {
-			getResponse(httplink, wg)
+			getResponse(httpLink, wg)
 			return
 		}
 	}
@@ -90,9 +90,9 @@ func head(httplink string, wg *sync.WaitGroup) {
 }
 
 // Fallback for failed HEAD requests
-func getResponse(httplink string, wg *sync.WaitGroup) {
+func getResponse(httpLink string, wg *sync.WaitGroup) {
 	output := Result{}
-	output.URL = httplink
+	output.URL = httpLink
 	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
 
 	client := http.Client{
@@ -100,7 +100,7 @@ func getResponse(httplink string, wg *sync.WaitGroup) {
 		CheckRedirect: redirectMiddleware,
 	}
 
-	req, err := http.NewRequest("GET", httplink, nil)
+	req, err := http.NewRequest("GET", httpLink, nil)
 	if err != nil {
 		errorsProcessed++
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
@@ -117,11 +117,11 @@ func getResponse(httplink string, wg *sync.WaitGroup) {
 			loc := res.Header.Get("Location")
 			output.StatusCode = res.StatusCode
 			if loc != "" {
-				full, err := absoluteURL(loc, httplink)
+				full, err := absoluteURL(loc, httpLink)
 				if err == nil {
 					output.Redirect = full
 					results = append(results, output)
-					addQueueLink(full, "head", httplink, 0, wg)
+					addQueueLink(full, "head", httpLink, 0, wg)
 					return
 				}
 			}
@@ -144,8 +144,8 @@ func getResponse(httplink string, wg *sync.WaitGroup) {
 }
 
 // Return the domain name (host) from a URL
-func getHost(httplink string) string {
-	u, err := url.Parse(httplink)
+func getHost(httpLink string) string {
+	u, err := url.Parse(httpLink)
 	if err != nil {
 		return ""
 	}
@@ -239,7 +239,7 @@ func actionWeight(f string) int {
 }
 
 // RedirectMiddleware will return an error on redirect if redirectWarnings == true
-func redirectMiddleware(req *http.Request, via []*http.Request) error {
+func redirectMiddleware(req *http.Request, _ []*http.Request) error {
 	if redirectWarnings {
 		return fmt.Errorf("%d redirect", req.Response.StatusCode)
 	}

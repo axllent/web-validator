@@ -1,3 +1,4 @@
+// Package main is the application
 package main
 
 import (
@@ -21,7 +22,7 @@ var (
 	checkOutbound    bool
 	validateHTML     bool
 	validateCSS      bool
-	showWarnigs      bool
+	showWarnings     bool
 	baseDomain       string
 	allLinks         bool
 	fullScan         bool
@@ -65,7 +66,7 @@ func main() {
 	flag.StringVarP(&ignoreURLs, "ignore", "i", "", "ignore URLs, comma-separated, wildcards allowed (*.jpg,example.com)")
 	flag.BoolVarP(&noRobots, "no-robots", "n", false, "ignore robots.txt (if exists)")
 	flag.BoolVarP(&redirectWarnings, "redirects", "r", false, "treat redirects as errors")
-	flag.BoolVarP(&showWarnigs, "warnings", "w", false, "display validation warnings (default errors only)")
+	flag.BoolVarP(&showWarnings, "warnings", "w", false, "display validation warnings (default errors only)")
 	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -r -o --html --css\")")
 	flag.IntVarP(&nrThreads, "threads", "t", 5, "number of threads")
 	flag.IntVar(&timeoutSeconds, "timeout", 10, "timeout in seconds")

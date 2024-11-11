@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -54,8 +53,8 @@ func validate(output Result, body io.Reader, contentType string) Result {
 	req, err := http.NewRequest("POST", htmlValidator, body)
 
 	if err != nil {
-		log.Fatal(err)
 		validatorMutex.Unlock()
+		log.Fatal(err)
 	}
 
 	req.Header.Set("User-Agent", "Web-validator")
@@ -75,7 +74,7 @@ func validate(output Result, body io.Reader, contentType string) Result {
 
 	defer res.Body.Close()
 
-	data, err := ioutil.ReadAll(res.Body)
+	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		output.Errors = append(output.Errors, fmt.Sprintf("Validator: %s", err))
 		return output
@@ -95,7 +94,7 @@ func validate(output Result, body io.Reader, contentType string) Result {
 	}
 
 	for _, msg := range response.Messages {
-		if msg.Type == "error" || (showWarnigs && msg.Type == "info") {
+		if msg.Type == "error" || (showWarnings && msg.Type == "info") {
 			errorsProcessed++
 			output.ValidationErrors = append(output.ValidationErrors, msg)
 		}
