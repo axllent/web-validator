@@ -15,6 +15,7 @@ var (
 	ignoreMatches = []*regexp.Regexp{
 		regexp.MustCompile(`^https?://(www\.)?linkedin\.com`),
 		regexp.MustCompile(`^https://(.*)\.google\.com`),
+		regexp.MustCompile(`^https://(.*)\.cloudflare\.com`),
 	}
 
 	cssURLmatches = regexp.MustCompile(`(?mU)\burl\((.*)\)`)
