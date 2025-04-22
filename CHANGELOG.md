@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.4]
+
+- Update Go dependencies
+
+
 ## [0.1.3]
 
 - Ignore redirects to CloudFlare (caused by proxied email protection)
