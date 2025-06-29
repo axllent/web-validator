@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -23,11 +22,11 @@ var (
 
 // HEAD a link to get the status of the URL
 // Note: some sites block HEAD, so if a HEAD fails with a 404 or 405 error
-// then a getResponse() is done (outbound links only)
+// then a getResponse() is performed is done (outbound links only)
 func head(httpLink string, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
-	output := Result{}
+	output := result{}
 	output.URL = httpLink
 	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
 
@@ -67,7 +66,7 @@ func head(httpLink string, wg *sync.WaitGroup) {
 		return
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	// some hosts block HEAD requests, so we do a standard GET instead
 	if res.StatusCode == 404 || res.StatusCode == 405 {
@@ -91,7 +90,7 @@ func head(httpLink string, wg *sync.WaitGroup) {
 
 // Fallback for failed HEAD requests
 func getResponse(httpLink string, wg *sync.WaitGroup) {
-	output := Result{}
+	output := result{}
 	output.URL = httpLink
 	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
 
@@ -131,7 +130,7 @@ func getResponse(httpLink string, wg *sync.WaitGroup) {
 		return
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	output.StatusCode = res.StatusCode
 
@@ -153,10 +152,10 @@ func getHost(httpLink string) string {
 }
 
 // AbsoluteURL will return a full URL regardless whether it is relative or absolute
-func absoluteURL(link, baselink string) (string, error) {
+func absoluteURL(link, baseLink string) (string, error) {
 	// scheme relative links, eg <script src="//example.com/script.js">
 	if len(link) > 1 && link[0:2] == "//" {
-		base, err := url.Parse(baselink)
+		base, err := url.Parse(baseLink)
 		if err != nil {
 			return link, err
 		}
@@ -171,7 +170,7 @@ func absoluteURL(link, baselink string) (string, error) {
 	// remove hashes
 	u.Fragment = ""
 
-	base, err := url.Parse(baselink)
+	base, err := url.Parse(baseLink)
 	if err != nil {
 		return link, err
 	}
@@ -185,20 +184,20 @@ func absoluteURL(link, baselink string) (string, error) {
 
 	// ensure link is HTTP(S)
 	if result.Scheme != "http" && result.Scheme != "https" {
-		return link, fmt.Errorf("Invalid URL: %s", result.String())
+		return link, fmt.Errorf("invalid URL: %s", result.String())
 	}
 
 	return result.String(), nil
 }
 
 // Whether related link is mixed content (HTTPS to HTTP).
-func isMixedContent(srclink, reflink string) bool {
-	srcLink, err := url.Parse(srclink)
+func isMixedContent(src, ref string) bool {
+	srcLink, err := url.Parse(src)
 	if err != nil || srcLink.Scheme == "http" {
 		return false
 	}
 
-	refLink, err := url.Parse(reflink)
+	refLink, err := url.Parse(ref)
 	if err == nil && refLink.Scheme == "http" {
 		return true
 	}
@@ -208,24 +207,14 @@ func isMixedContent(srclink, reflink string) bool {
 
 // Truncate a string
 func truncateString(str string, num int) string {
-	bnoden := str
+	ts := str
 	if len(str) > num {
 		if num > 3 {
 			num -= 3
 		}
-		bnoden = str[0:num] + "..."
+		ts = str[0:num] + "..."
 	}
-	return bnoden
-}
-
-// stringInSlice is a string-only version in php's in_array()
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
+	return ts
 }
 
 // Single function to return a "weight" (int) based on the action to
@@ -244,12 +233,6 @@ func redirectMiddleware(req *http.Request, _ []*http.Request) error {
 		return fmt.Errorf("%d redirect", req.Response.StatusCode)
 	}
 	return nil
-}
-
-// Debugging pretty print
-func prettyPrint(i interface{}) {
-	s, _ := json.MarshalIndent(i, "", "\t")
-	fmt.Println(string(s))
 }
 
 // CSS URL

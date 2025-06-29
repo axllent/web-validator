@@ -16,8 +16,7 @@ import (
 )
 
 var (
-	results          []Result
-	uri              string
+	results          []result
 	maxDepth         int
 	checkOutbound    bool
 	validateHTML     bool
@@ -82,9 +81,12 @@ func main() {
 	flag.BoolVarP(&showVersion, "version", "v", false, "show app version")
 	flag.BoolVarP(&showHelp, "help", "h", false, "show help")
 
-	flag.MarkHidden("help")
+	_ = flag.MarkHidden("help")
 
-	flag.Parse(os.Args[1:])
+	if err := flag.Parse(os.Args[1:]); err != nil {
+		fmt.Println("Error parsing flags:", err)
+		os.Exit(1)
+	}
 
 	args := flag.Args()
 
@@ -154,9 +156,9 @@ func main() {
 		// create slice of ignore strings converting them to regex
 		urls := strings.Split(ignoreURLs, ",")
 		for _, u := range urls {
-			filter := strings.Replace(u, "*", "WILDCARD_CHARACTER_HERE", -1)
+			filter := strings.ReplaceAll(u, "*", "WILDCARD_CHARACTER_HERE")
 			filter = regexp.QuoteMeta(filter)
-			filter = strings.Replace(filter, "WILDCARD_CHARACTER_HERE", "(.*)", -1)
+			filter = strings.ReplaceAll(filter, "WILDCARD_CHARACTER_HERE", "(.*)")
 			re := regexp.MustCompile(filter)
 			ignoreMatches = append(ignoreMatches, re)
 		}
