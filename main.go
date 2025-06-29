@@ -11,13 +11,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/axllent/ghru"
+	"github.com/axllent/ghru/v2"
 	"github.com/spf13/pflag"
 )
 
 var (
-	results          []Result
-	uri              string
+	results          []result
 	maxDepth         int
 	checkOutbound    bool
 	validateHTML     bool
@@ -39,6 +38,13 @@ var (
 	userAgent        = "web-validator"
 	linksProcessed   = 0
 	errorsProcessed  = 0
+
+	ghruConf = ghru.Config{
+		Repo:           "axllent/web-validator",
+		ArchiveName:    "web-validator-{{.OS}}-{{.Arch}}",
+		BinaryName:     "web-validator",
+		CurrentVersion: appVersion,
+	}
 )
 
 func main() {
@@ -75,9 +81,12 @@ func main() {
 	flag.BoolVarP(&showVersion, "version", "v", false, "show app version")
 	flag.BoolVarP(&showHelp, "help", "h", false, "show help")
 
-	flag.MarkHidden("help")
+	_ = flag.MarkHidden("help")
 
-	flag.Parse(os.Args[1:])
+	if err := flag.Parse(os.Args[1:]); err != nil {
+		fmt.Println("Error parsing flags:", err)
+		os.Exit(1)
+	}
 
 	args := flag.Args()
 
@@ -89,21 +98,37 @@ func main() {
 	}
 
 	if showVersion {
-		fmt.Println(fmt.Sprintf("Version: %s", appVersion))
-		latest, _, _, err := ghru.Latest("axllent/web-validator", "web-validator")
-		if err == nil && ghru.GreaterThan(latest, appVersion) {
-			fmt.Printf("Update available: %s\nRun `%s -u` to update.\n", latest, os.Args[0])
+		fmt.Printf("Version: %s\n", appVersion)
+
+		release, err := ghruConf.Latest()
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
 		}
+
+		// The latest version is the same version
+		if release.Tag == appVersion {
+			os.Exit(0)
+		}
+
+		// A newer release is available
+		fmt.Printf(
+			"Update available: %s\nRun `%s -u` to update (requires read/write access to install directory).\n",
+			release.Tag,
+			os.Args[0],
+		)
 		os.Exit(0)
 	}
 
 	if update {
-		rel, err := ghru.Update("axllent/web-validator", "web-validator", appVersion)
+		// Update the app
+		rel, err := ghruConf.SelfUpdate()
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(2)
+			fmt.Println(err.Error())
+			os.Exit(1)
 		}
-		fmt.Printf("Updated %s to version %s\n", os.Args[0], rel)
+
+		fmt.Printf("Updated %s to version %s\n", os.Args[0], rel.Tag)
 		os.Exit(0)
 	}
 
@@ -119,8 +144,9 @@ func main() {
 			fmt.Printf("Invalid Nu validator address: %s\n", htmlValidator)
 			os.Exit(2)
 		}
-		// add `?out=json`
+
 		q := u.Query()
+		// add `?out=json`
 		q.Set("out", "json")
 		u.RawQuery = q.Encode()
 		htmlValidator = u.String()
@@ -130,9 +156,9 @@ func main() {
 		// create slice of ignore strings converting them to regex
 		urls := strings.Split(ignoreURLs, ",")
 		for _, u := range urls {
-			filter := strings.Replace(u, "*", "WILDCARD_CHARACTER_HERE", -1)
+			filter := strings.ReplaceAll(u, "*", "WILDCARD_CHARACTER_HERE")
 			filter = regexp.QuoteMeta(filter)
-			filter = strings.Replace(filter, "WILDCARD_CHARACTER_HERE", "(.*)", -1)
+			filter = strings.ReplaceAll(filter, "WILDCARD_CHARACTER_HERE", "(.*)")
 			re := regexp.MustCompile(filter)
 			ignoreMatches = append(ignoreMatches, re)
 		}

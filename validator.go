@@ -9,9 +9,9 @@ import (
 	"strings"
 )
 
-// NuJSONStruct response
-type NuJSONStruct struct {
-	Messages []ValidationError `json:"messages"`
+// nuJSON response
+type nuJSON struct {
+	Messages []validationError `json:"messages"`
 	Source   struct {
 		Type     string `json:"type"`
 		Encoding string `json:"encoding"`
@@ -20,8 +20,8 @@ type NuJSONStruct struct {
 	Language string `json:"language"`
 }
 
-// ValidationError struct
-type ValidationError struct {
+// validationError struct
+type validationError struct {
 	Type         string `json:"type"`
 	LastLine     int    `json:"lastLine"`
 	LastColumn   int    `json:"lastColumn"`
@@ -33,7 +33,7 @@ type ValidationError struct {
 }
 
 // Validate will validate HTML & CSS with Nu Validator
-func validate(output Result, body io.Reader, contentType string) Result {
+func validate(output result, body io.Reader, contentType string) result {
 	if !strings.Contains(contentType, "text/html") && !strings.Contains(contentType, "text/css") {
 		return output
 	}
@@ -72,7 +72,7 @@ func validate(output Result, body io.Reader, contentType string) Result {
 		return output
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
@@ -85,7 +85,7 @@ func validate(output Result, body io.Reader, contentType string) Result {
 		return output
 	}
 
-	response := NuJSONStruct{}
+	response := nuJSON{}
 	jsonErr := json.Unmarshal(data, &response)
 	if jsonErr != nil {
 		errorsProcessed++

@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -12,35 +12,30 @@ import (
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/lukasbob/srcset"
+	"golang.org/x/exp/slices"
 )
 
 var (
 	processed      = make(map[string]int) // 1 = HEAD, 2 = GET
-	referers       = make(map[string][]string)
+	referrers      = make(map[string][]string)
 	mapMutex       = sync.RWMutex{}
 	validatorMutex = sync.RWMutex{}
 	fileRegex      = regexp.MustCompile(`(?i)\.(jpe?g|png|gif|svg|ico|pdf|swf|mp4|avi|mp3|ogg|mkv|docx?|xlsx?|zip|gz|bz2|tar|xz)$`)
 )
 
-// Link struct for channel
-type Link struct {
-	URL  string
-	Type string
-}
-
 // Result struct
-type Result struct {
+type result struct {
 	URL              string
 	Type             string
 	StatusCode       int
 	Errors           []string
-	ValidationErrors []ValidationError
+	ValidationErrors []validationError
 	Redirect         string
 }
 
 // Add a link to the queue.
-func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGroup) {
-	if !robotsAllowed(httplink) {
+func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGroup) {
+	if !robotsAllowed(httpLink) {
 		return
 	}
 
@@ -50,17 +45,17 @@ func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGrou
 	}
 
 	// remove trailing ? or #
-	if len(httplink) > 0 && httplink[len(httplink)-1] == '?' || httplink[len(httplink)-1] == '#' {
-		httplink = httplink[:len(httplink)-1]
+	if len(httpLink) > 0 && httpLink[len(httpLink)-1] == '?' || httpLink[len(httpLink)-1] == '#' {
+		httpLink = httpLink[:len(httpLink)-1]
 	}
 
 	for _, r := range ignoreMatches {
-		if r.MatchString(httplink) {
+		if r.MatchString(httpLink) {
 			return
 		}
 	}
 
-	isOutbound := baseDomain != "" && getHost(httplink) != baseDomain
+	isOutbound := baseDomain != "" && getHost(httpLink) != baseDomain
 
 	if isOutbound && !checkOutbound {
 		return
@@ -76,37 +71,37 @@ func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGrou
 	defer mapMutex.Unlock()
 
 	// check if we have processed this already
-	processType, found := processed[httplink]
+	processType, found := processed[httpLink]
 	if found && processType >= actionWeight(action) {
-		// add to referers
-		if referer != httplink && !stringInSlice(referer, referers[httplink]) {
-			referers[httplink] = append(referers[httplink], referer)
+		// add to referrers
+		if referer != httpLink && !slices.Contains(referrers[httpLink], referer) {
+			referrers[httpLink] = append(referrers[httpLink], referer)
 		}
 	} else {
 		// enforce HEAD - prevent validating common files HTML / CSS
-		if action == "parse" && fileRegex.MatchString(httplink) {
+		if action == "parse" && fileRegex.MatchString(httpLink) {
 			action = "head"
 		}
 
 		linksProcessed++
-		processed[httplink] = actionWeight(action)
+		processed[httpLink] = actionWeight(action)
 
 		// progress report
-		fmt.Printf("\033[2K\r#%-3d (%d errors) %s", linksProcessed, errorsProcessed, truncateString(httplink, 100))
+		fmt.Printf("\033[2K\r#%-3d (%d errors) %s", linksProcessed, errorsProcessed, truncateString(httpLink, 100))
 
 		if referer == "" {
 			// initiate empty slice
-			referers[httplink] = []string{}
-		} else if referer != httplink {
-			referers[httplink] = []string{referer}
+			referrers[httpLink] = []string{}
+		} else if referer != httpLink {
+			referrers[httpLink] = []string{referer}
 		}
 
 		if isOutbound {
-			go head(httplink, wg)
+			go head(httpLink, wg)
 		} else if action == "parse" {
-			go fetchAndParse(httplink, action, depth, wg)
+			go fetchAndParse(httpLink, action, depth, wg)
 		} else {
-			go head(httplink, wg)
+			go head(httpLink, wg)
 		}
 		// add small delay to ensure goroutine registers wg.Add(1) before completion
 		time.Sleep(time.Millisecond * 100)
@@ -115,12 +110,12 @@ func addQueueLink(httplink, action, referer string, depth int, wg *sync.WaitGrou
 	<-threads // removes an int from threads, allowing another to proceed
 }
 
-// FetchAndParse will action a remove file, and
-func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
+// FetchAndParse will request the URL and parse it.
+func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
-	output := Result{}
-	output.URL = httplink
+	output := result{}
+	output.URL = httpLink
 	output.Type = action
 
 	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
@@ -130,7 +125,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		CheckRedirect: redirectMiddleware,
 	}
 
-	req, err := http.NewRequest("GET", httplink, nil)
+	req, err := http.NewRequest("GET", httpLink, nil)
 	if err != nil {
 		errorsProcessed++
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
@@ -147,11 +142,11 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 			loc := res.Header.Get("Location")
 			output.StatusCode = res.StatusCode
 			if loc != "" {
-				full, err := absoluteURL(loc, httplink)
+				full, err := absoluteURL(loc, httpLink)
 				if err == nil {
 					output.Redirect = full
 					results = append(results, output)
-					addQueueLink(full, action, httplink, depth, wg)
+					addQueueLink(full, action, httpLink, depth, wg)
 					return
 				}
 			}
@@ -161,7 +156,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		return
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	output.StatusCode = res.StatusCode
 
@@ -172,7 +167,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 	}
 
 	// read the body to create two separate readers
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		errorsProcessed++
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
@@ -199,11 +194,11 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		}
 
 		// CHECK FOR BASE
-		baseLink := httplink
+		baseLink := httpLink
 
 		doc.Find("base").Each(func(i int, s *goquery.Selection) {
 			if link, ok := s.Attr("href"); ok {
-				full, err := absoluteURL(link, httplink)
+				full, err := absoluteURL(link, httpLink)
 				if err == nil {
 					baseLink = full
 				}
@@ -217,7 +212,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 				if err != nil {
 					return
 				}
-				if isMixedContent(httplink, full) {
+				if isMixedContent(httpLink, full) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to file: %s", full))
 				}
@@ -226,7 +221,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 				if goquery.NodeName(s) == "iframe" {
 					fileType = "parse"
 				}
-				addQueueLink(full, fileType, httplink, depth, wg)
+				addQueueLink(full, fileType, httpLink, depth, wg)
 			}
 
 			if link, ok := s.Attr("srcset"); ok {
@@ -238,11 +233,11 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 					if err != nil {
 						return
 					}
-					if isMixedContent(httplink, full) {
+					if isMixedContent(httpLink, full) {
 						errorsProcessed++
 						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to file: %s", full))
 					}
-					addQueueLink(full, "head", httplink, depth, wg)
+					addQueueLink(full, "head", httpLink, depth, wg)
 				}
 			}
 		})
@@ -259,7 +254,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content link to CSS: %s", full))
 				}
-				addQueueLink(full, "parse", httplink, depth, wg)
+				addQueueLink(full, "parse", httpLink, depth, wg)
 			}
 		})
 
@@ -275,7 +270,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to JS: %s", full))
 				}
-				addQueueLink(full, "head", httplink, depth, wg)
+				addQueueLink(full, "head", httpLink, depth, wg)
 			}
 		})
 
@@ -290,7 +285,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
 				}
-				addQueueLink(full, "head", httplink, depth, wg)
+				addQueueLink(full, "head", httpLink, depth, wg)
 			}
 		})
 
@@ -305,7 +300,7 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
 				}
-				addQueueLink(full, "head", httplink, depth, wg)
+				addQueueLink(full, "head", httpLink, depth, wg)
 			}
 		})
 
@@ -320,9 +315,9 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 				isOutbound := baseDomain != "" && getHost(full) != baseDomain
 
 				if isOutbound {
-					addQueueLink(full, "head", httplink, depth, wg)
+					addQueueLink(full, "head", httpLink, depth, wg)
 				} else {
-					addQueueLink(full, "parse", httplink, depth+1, wg)
+					addQueueLink(full, "parse", httpLink, depth+1, wg)
 				}
 			}
 		})
@@ -335,11 +330,11 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 				if err != nil {
 					break
 				}
-				if isMixedContent(httplink, full) {
+				if isMixedContent(httpLink, full) {
 					errorsProcessed++
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
 				}
-				addQueueLink(full, "head", httplink, depth, wg)
+				addQueueLink(full, "head", httpLink, depth, wg)
 			}
 		})
 
@@ -351,11 +346,11 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 					if err != nil {
 						return
 					}
-					if isMixedContent(httplink, full) {
+					if isMixedContent(httpLink, full) {
 						errorsProcessed++
 						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
 					}
-					addQueueLink(full, "head", httplink, depth, wg)
+					addQueueLink(full, "head", httpLink, depth, wg)
 				}
 			}
 		})
@@ -370,15 +365,15 @@ func fetchAndParse(httplink, action string, depth int, wg *sync.WaitGroup) {
 		output = validate(output, r, res.Header.Get("Content-Type"))
 
 		for _, link := range extractStyleURLs(string(body)) {
-			full, err := absoluteURL(link, httplink)
+			full, err := absoluteURL(link, httpLink)
 			if err != nil {
 				continue
 			}
-			if isMixedContent(httplink, full) {
+			if isMixedContent(httpLink, full) {
 				errorsProcessed++
 				output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
 			}
-			addQueueLink(full, "head", httplink, depth, wg)
+			addQueueLink(full, "head", httpLink, depth, wg)
 		}
 	}
 

@@ -2,21 +2,19 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/axllent/web-validator)](https://goreportcard.com/report/github.com/axllent/web-validator)
 
-A command-line website validator for Linux, Mac & Windows, which can spider through a website, 
-validating all HTML & CSS pages, check the existence of all assets (images, css, fonts etc), 
+A command-line website validator for Linux, Mac & Windows, which can spider through a website,
+validating all HTML & CSS pages, check the existence of all assets (images, css, fonts etc),
 and verify outbound links.
-
 
 ## Features
 
 - Check a single URL, to a certain depth, or an entire website
 - HTML & CSS validation using (default) the [Nu Html Checker](https://validator.w3.org/)
-- Detect & checks linked assets from HTML & linked CSS (fonts, favicons, images, videos, etc)
+- Detect & check linked assets from HTML & linked CSS (fonts, favicons, images, videos, etc)
 - Detect mixed content (HTTPS => HTTP) for linked assets (fonts, images, CSS, JS etc)
 - Verify outbound links (to external websites)
-- Summary report or errors (& optionally HTML/CSS warnings)
+- Summary report of errors (& optionally HTML/CSS warnings)
 - Obeys `robots.txt` (can be ignored)
-
 
 ## Usage options
 
@@ -41,7 +39,6 @@ Options:
   -v, --version            show app version
 ```
 
-
 ## Examples
 
 - `web-validator https://example.com/` - scan URL, verify all direct assets & links
@@ -51,12 +48,10 @@ Options:
 - `web-validator https://example.com/ -a -o` - scan entire site, verify all assets, verify outbound links
 - `web-validator https://example.com/ -f` - scan entire site, verify all assets, verify outbound links, validate HTML & CSS
 
-
 ## Installing
 
-Download the [latest binary release](https://github.com/axllent/web-validator/releases/latest) for your system, 
-or build from source `go get -u github.com/axllent/web-validator`(go >= 1.11 required)
-
+Download the [latest binary release](https://github.com/axllent/web-validator/releases/latest) for your system,
+or build from source `go get -u github.com/axllent/web-validator@latest`(go >= 1.23 required)
 
 ## FAQ
 
@@ -64,16 +59,13 @@ or build from source `go get -u github.com/axllent/web-validator`(go >= 1.11 req
 
 When scanning a page, the software will check all internal links from that single page, which include both pages and files. Only a HEAD request is done on linked pages (no validation etc) to check for a valid response.
 
-
 ### Web-validator says some of my outbound links are broken, however they do work
 
 Some sites specifically block all HEAD requests, in which case web-validator will try a regular GET request. Some sites however go to extreme lengths to prevent any kind of scraping, such as LinkedIn, so these will always return an error response. LinkedIn (specifically) is now blacklisted in the application, so any linkedin links are completely ignored. If you come across another major site with similar issues, then let me know and I will add them to the list.
 
-
 ### HTML/CSS validation
 
 Validation uses the [Nu Html validator]("https://validator.w3.org/nu/"), and by default uses the online public service (they [encourage this](https://github.com/validator/validator/wiki/Service-%C2%BB-Input-%C2%BB-POST-body)). You can however use your [own instance](https://validator.w3.org/docs/users.html) of the validator (open source), and use the `--validator <your-server>` to specify your own.
-
 
 ### Robots.txt
 

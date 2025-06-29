@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func displayReport(results []Result) {
+func displayReport(results []result) {
 	fmt.Printf("\033[2K\rScanned: %d links\nErrors:  %d\nTime:    %vs\n\n", linksProcessed, errorsProcessed, timeTaken)
 
 	for _, r := range results {
@@ -26,11 +26,11 @@ func displayReport(results []Result) {
 			fmt.Printf("Status:  %d (%s)\n", r.StatusCode, http.StatusText(r.StatusCode))
 		}
 
-		if len(referers[r.URL]) > 0 {
-			if len(referers[r.URL]) > 3 {
-				fmt.Printf("Refs:    %s ... (%dx)\n", strings.Join(referers[r.URL][0:3], "\n         "), len(referers[r.URL]))
+		if len(referrers[r.URL]) > 0 {
+			if len(referrers[r.URL]) > 3 {
+				fmt.Printf("Refs:    %s ... (%dx)\n", strings.Join(referrers[r.URL][0:3], "\n         "), len(referrers[r.URL]))
 			} else {
-				fmt.Printf("Refs:    %s\n", strings.Join(referers[r.URL], "\n         "))
+				fmt.Printf("Refs:    %s\n", strings.Join(referrers[r.URL], "\n         "))
 			}
 		}
 
@@ -48,7 +48,7 @@ func displayReport(results []Result) {
 			errorNr++
 			fmt.Printf("  %4d)  [#%d] (%s) %s\n", errorNr, e.LastLine, e.Type, strings.TrimSpace(e.Message))
 		}
-		fmt.Println("")
 
+		fmt.Println("")
 	}
 }
