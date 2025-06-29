@@ -10,10 +10,11 @@ require (
 	github.com/jimsmart/grobotstxt v1.0.3
 	github.com/lukasbob/srcset v0.0.0-20231122134231-06e7f27b6370
 	github.com/spf13/pflag v1.0.6
+	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b
 )
 
 require (
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	golang.org/x/mod v0.25.0 // indirect
-	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/net v0.41.0 // indirect
 )
