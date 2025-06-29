@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"time"
@@ -48,14 +48,14 @@ func initRobotsTxt(startURL string) {
 		return
 	}
 
-	defer res.Body.Close()
+	defer func() { _ = res.Body.Close() }()
 
 	if res.StatusCode != 200 {
 		noRobots = true
 		return
 	}
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		noRobots = true
 		return
