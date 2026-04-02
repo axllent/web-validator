@@ -88,14 +88,14 @@ func validate(output result, body io.Reader, contentType string) result {
 	response := nuJSON{}
 	jsonErr := json.Unmarshal(data, &response)
 	if jsonErr != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		output.Errors = append(output.Errors, fmt.Sprintf("Error parsing response from %s: %s", htmlValidator, string(data)))
 		return output
 	}
 
 	for _, msg := range response.Messages {
 		if msg.Type == "error" || (showWarnings && msg.Type == "info") {
-			errorsProcessed++
+			errorsProcessed.Add(1)
 			output.ValidationErrors = append(output.ValidationErrors, msg)
 		}
 	}

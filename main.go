@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/axllent/ghru/v2"
@@ -36,8 +37,8 @@ var (
 	threads          chan int
 	appVersion       = "dev"
 	userAgent        = "web-validator"
-	linksProcessed   = 0
-	errorsProcessed  = 0
+	linksProcessed  = 0
+	errorsProcessed atomic.Int64
 
 	ghruConf = ghru.Config{
 		Repo:           "axllent/web-validator",

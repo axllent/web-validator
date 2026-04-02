@@ -20,6 +20,7 @@ var (
 	referrers      = make(map[string][]string)
 	mapMutex       = sync.RWMutex{}
 	validatorMutex = sync.RWMutex{}
+	resultsMutex   = sync.Mutex{}
 	fileRegex      = regexp.MustCompile(`(?i)\.(jpe?g|png|gif|svg|ico|pdf|swf|mp4|avi|mp3|ogg|mkv|docx?|xlsx?|zip|gz|bz2|tar|xz)$`)
 )
 
@@ -31,6 +32,13 @@ type result struct {
 	Errors           []string
 	ValidationErrors []validationError
 	Redirect         string
+}
+
+// appendResult safely appends a result to the global results slice.
+func appendResult(r result) {
+	resultsMutex.Lock()
+	results = append(results, r)
+	resultsMutex.Unlock()
 }
 
 // Add a link to the queue.
@@ -87,7 +95,7 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 		processed[httpLink] = actionWeight(action)
 
 		// progress report
-		fmt.Printf("\033[2K\r#%-3d (%d errors) %s", linksProcessed, errorsProcessed, truncateString(httpLink, 100))
+		fmt.Printf("\033[2K\r#%-3d (%d errors) %s", linksProcessed, errorsProcessed.Load(), truncateString(httpLink, 100))
 
 		if referer == "" {
 			// initiate empty slice
@@ -125,9 +133,9 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 
 	req, err := http.NewRequest("GET", httpLink, nil)
 	if err != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-		results = append(results, output)
+		appendResult(output)
 		return
 	}
 
@@ -135,7 +143,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		if res != nil {
 			loc := res.Header.Get("Location")
 			output.StatusCode = res.StatusCode
@@ -143,14 +151,14 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 				full, err := absoluteURL(loc, httpLink)
 				if err == nil {
 					output.Redirect = full
-					results = append(results, output)
+					appendResult(output)
 					addQueueLink(full, action, httpLink, depth, wg)
 					return
 				}
 			}
 		}
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-		results = append(results, output)
+		appendResult(output)
 		return
 	}
 
@@ -159,17 +167,17 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 	output.StatusCode = res.StatusCode
 
 	if res.StatusCode != 200 {
-		errorsProcessed++
-		results = append(results, output)
+		errorsProcessed.Add(1)
+		appendResult(output)
 		return
 	}
 
 	// read the body to create two separate readers
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-		results = append(results, output)
+		appendResult(output)
 		return
 	}
 
@@ -187,7 +195,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 		doc, err := goquery.NewDocumentFromReader(r2)
 		if err != nil {
 			output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-			results = append(results, output)
+			appendResult(output)
 			return
 		}
 
@@ -211,7 +219,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 					return
 				}
 				if isMixedContent(httpLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to file: %s", full))
 				}
 				fileType := "head"
@@ -232,7 +240,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 						return
 					}
 					if isMixedContent(httpLink, full) {
-						errorsProcessed++
+						errorsProcessed.Add(1)
 						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to file: %s", full))
 					}
 					addQueueLink(full, "head", httpLink, depth, wg)
@@ -249,7 +257,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 					return
 				}
 				if isMixedContent(baseLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content link to CSS: %s", full))
 				}
 				addQueueLink(full, "parse", httpLink, depth, wg)
@@ -265,7 +273,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 					return
 				}
 				if isMixedContent(baseLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to JS: %s", full))
 				}
 				addQueueLink(full, "head", httpLink, depth, wg)
@@ -280,7 +288,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 					return
 				}
 				if isMixedContent(baseLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
 				}
 				addQueueLink(full, "head", httpLink, depth, wg)
@@ -295,7 +303,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 					return
 				}
 				if isMixedContent(baseLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
 				}
 				addQueueLink(full, "head", httpLink, depth, wg)
@@ -329,7 +337,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 					break
 				}
 				if isMixedContent(httpLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
 				}
 				addQueueLink(full, "head", httpLink, depth, wg)
@@ -345,7 +353,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 						return
 					}
 					if isMixedContent(httpLink, full) {
-						errorsProcessed++
+						errorsProcessed.Add(1)
 						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
 					}
 					addQueueLink(full, "head", httpLink, depth, wg)
@@ -368,7 +376,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 				continue
 			}
 			if isMixedContent(httpLink, full) {
-				errorsProcessed++
+				errorsProcessed.Add(1)
 				output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
 			}
 			addQueueLink(full, "head", httpLink, depth, wg)
@@ -376,5 +384,5 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 	}
 
 	// append results to global
-	results = append(results, output)
+	appendResult(output)
 }
