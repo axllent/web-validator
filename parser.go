@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -94,8 +95,12 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 		linksProcessed++
 		processed[httpLink] = actionWeight(action)
 
-		// progress report
-		fmt.Printf("\033[2K\r#%-3d (%d errors) %s", linksProcessed, errorsProcessed.Load(), truncateString(httpLink, 100))
+		// progress report: use stderr for machine-readable formats so stdout stays clean
+		progressOut := os.Stdout
+		if outputFormat != "text" {
+			progressOut = os.Stderr
+		}
+		fmt.Fprintf(progressOut, "\033[2K\r#%-3d (%d errors) %s", linksProcessed, errorsProcessed.Load(), truncateString(httpLink, 100))
 
 		if referer == "" {
 			// initiate empty slice

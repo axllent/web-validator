@@ -34,6 +34,7 @@ var (
 	showVersion      bool
 	ignoreURLs       string
 	useSitemap       bool
+	outputFormat     = "text"
 	timeoutSeconds   int
 	threads          chan int
 	appVersion       = "dev"
@@ -77,6 +78,7 @@ func main() {
 	flag.BoolVarP(&redirectWarnings, "redirects", "r", false, "treat redirects as errors")
 	flag.BoolVarP(&showWarnings, "warnings", "w", false, "display validation warnings (default errors only)")
 	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -r -o --html --css\")")
+	flag.StringVar(&outputFormat, "output", "text", "output format: text, json, csv, html")
 	flag.IntVarP(&nrThreads, "threads", "t", 5, "number of threads")
 	flag.IntVar(&timeoutSeconds, "timeout", 10, "timeout in seconds")
 	flag.StringVar(&htmlValidator, "validator", htmlValidator, "Nu Html validator")
@@ -138,6 +140,13 @@ func main() {
 	if len(args) != 1 {
 		fmt.Println("web-validator: missing URL")
 		fmt.Printf("Try `%s -h` for more options.\n", os.Args[0])
+		os.Exit(2)
+	}
+
+	switch outputFormat {
+	case "text", "json", "csv", "html":
+	default:
+		fmt.Printf("Invalid output format %q: must be text, json, csv, or html\n", outputFormat)
 		os.Exit(2)
 	}
 
