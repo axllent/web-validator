@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.1.0]
+
+- Add output format options with reporting in multiple formats (text, json, csv, html)
+- Add sitemap support to seed URLs from sitemap.xml
+- Add `--skip-domains` flag to exclude specified domains from validation
+- Add crawl and validator delays to manage request rates
+- Add CI workflows for testing and automated releases
+- Add comprehensive validation tests
+- Refactor error handling to use atomic operations for thread safety
+- Fix logical grouping in URL trimming conditions
+- Update Go dependencies
+
 ## [1.0.0]
 
 - Use ghru/v2 for latest version checks and self-update functionality
