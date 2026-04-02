@@ -24,7 +24,6 @@ var (
 // Note: some sites block HEAD, so if a HEAD fails with a 404 or 405 error
 // then a getResponse() is performed is done (outbound links only)
 func head(httpLink string, wg *sync.WaitGroup) {
-	wg.Add(1)
 	defer wg.Done()
 	output := result{}
 	output.URL = httpLink
@@ -37,9 +36,9 @@ func head(httpLink string, wg *sync.WaitGroup) {
 
 	req, err := http.NewRequest("HEAD", httpLink, nil)
 	if err != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-		results = append(results, output)
+		appendResult(output)
 		return
 	}
 
@@ -47,7 +46,7 @@ func head(httpLink string, wg *sync.WaitGroup) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		if res != nil {
 			loc := res.Header.Get("Location")
 			output.StatusCode = res.StatusCode
@@ -55,14 +54,14 @@ func head(httpLink string, wg *sync.WaitGroup) {
 				full, err := absoluteURL(loc, httpLink)
 				if err == nil {
 					output.Redirect = full
-					results = append(results, output)
+					appendResult(output)
 					addQueueLink(full, "head", httpLink, 0, wg)
 					return
 				}
 			}
 		}
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-		results = append(results, output)
+		appendResult(output)
 		return
 	}
 
@@ -81,11 +80,11 @@ func head(httpLink string, wg *sync.WaitGroup) {
 	output.StatusCode = res.StatusCode
 
 	if output.StatusCode != 200 {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		output.Errors = append(output.Errors, fmt.Sprintf("returned status %d", output.StatusCode))
 	}
 
-	results = append(results, output)
+	appendResult(output)
 }
 
 // Fallback for failed HEAD requests
@@ -101,9 +100,9 @@ func getResponse(httpLink string, wg *sync.WaitGroup) {
 
 	req, err := http.NewRequest("GET", httpLink, nil)
 	if err != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-		results = append(results, output)
+		appendResult(output)
 		return
 	}
 
@@ -111,7 +110,7 @@ func getResponse(httpLink string, wg *sync.WaitGroup) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		if res != nil {
 			loc := res.Header.Get("Location")
 			output.StatusCode = res.StatusCode
@@ -119,14 +118,14 @@ func getResponse(httpLink string, wg *sync.WaitGroup) {
 				full, err := absoluteURL(loc, httpLink)
 				if err == nil {
 					output.Redirect = full
-					results = append(results, output)
+					appendResult(output)
 					addQueueLink(full, "head", httpLink, 0, wg)
 					return
 				}
 			}
 		}
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-		results = append(results, output)
+		appendResult(output)
 		return
 	}
 
@@ -135,11 +134,11 @@ func getResponse(httpLink string, wg *sync.WaitGroup) {
 	output.StatusCode = res.StatusCode
 
 	if output.StatusCode != 200 {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		output.Errors = append(output.Errors, fmt.Sprintf("returned status %d", output.StatusCode))
 	}
 
-	results = append(results, output)
+	appendResult(output)
 }
 
 // Return the domain name (host) from a URL
@@ -242,11 +241,11 @@ func extractStyleURLs(body string) []string {
 	for _, res := range matches {
 		url := strings.TrimSpace(res[1])
 		// strip quotes left
-		if len(url) > 0 && url[0] == '"' || url[0] == '\'' {
+		if len(url) > 0 && (url[0] == '"' || url[0] == '\'') {
 			url = url[1:]
 		}
 		// strip quotes right
-		if len(url) > 0 && url[len(url)-1] == '"' || url[len(url)-1] == '\'' {
+		if len(url) > 0 && (url[len(url)-1] == '"' || url[len(url)-1] == '\'') {
 			url = url[:len(url)-1]
 		}
 		if len(url) > 0 {

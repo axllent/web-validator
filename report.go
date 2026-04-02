@@ -7,7 +7,7 @@ import (
 )
 
 func displayReport(results []result) {
-	fmt.Printf("\033[2K\rScanned: %d links\nErrors:  %d\nTime:    %vs\n\n", linksProcessed, errorsProcessed, timeTaken)
+	fmt.Printf("\033[2K\rScanned: %d links\nErrors:  %d\nTime:    %vs\n\n", linksProcessed, errorsProcessed.Load(), timeTaken)
 
 	for _, r := range results {
 		if r.StatusCode == 200 && len(r.Errors) == 0 && len(r.ValidationErrors) == 0 && r.Redirect == "" {
