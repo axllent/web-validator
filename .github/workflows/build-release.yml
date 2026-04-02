@@ -5,9 +5,23 @@ on:
     types: [created]
 
 jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run tests
+        run: go test ./... -v
+
   releases-matrix:
     name: Release Go Binary
     runs-on: ubuntu-latest
+    needs: test
     strategy:
       matrix:
         goos: [linux, darwin, windows]
@@ -23,7 +37,7 @@ jobs:
             goos: windows
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: wangyoucao577/go-release-action@v1
         with:

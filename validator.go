@@ -46,18 +46,14 @@ func validate(output result, body io.Reader, contentType string) result {
 		return output
 	}
 
-	// Process only one request to validator at a time
-	validatorMutex.Lock()
-	defer validatorMutex.Unlock()
+	validatorWait()
 
 	req, err := http.NewRequest("POST", htmlValidator, body)
-
 	if err != nil {
-		validatorMutex.Unlock()
 		log.Fatal(err)
 	}
 
-	req.Header.Set("User-Agent", "Web-validator")
+	req.Header.Set("User-Agent", userAgent)
 
 	if output.Type != "" {
 		req.Header.Set("Content-Type", contentType)
@@ -88,14 +84,14 @@ func validate(output result, body io.Reader, contentType string) result {
 	response := nuJSON{}
 	jsonErr := json.Unmarshal(data, &response)
 	if jsonErr != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		output.Errors = append(output.Errors, fmt.Sprintf("Error parsing response from %s: %s", htmlValidator, string(data)))
 		return output
 	}
 
 	for _, msg := range response.Messages {
 		if msg.Type == "error" || (showWarnings && msg.Type == "info") {
-			errorsProcessed++
+			errorsProcessed.Add(1)
 			output.ValidationErrors = append(output.ValidationErrors, msg)
 		}
 	}

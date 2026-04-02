@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -16,11 +17,11 @@ import (
 )
 
 var (
-	processed      = make(map[string]int) // 1 = HEAD, 2 = GET
-	referrers      = make(map[string][]string)
-	mapMutex       = sync.RWMutex{}
-	validatorMutex = sync.RWMutex{}
-	fileRegex      = regexp.MustCompile(`(?i)\.(jpe?g|png|gif|svg|ico|pdf|swf|mp4|avi|mp3|ogg|mkv|docx?|xlsx?|zip|gz|bz2|tar|xz)$`)
+	processed    = make(map[string]int) // 1 = HEAD, 2 = GET
+	referrers    = make(map[string][]string)
+	mapMutex     = sync.RWMutex{}
+	resultsMutex = sync.Mutex{}
+	fileRegex    = regexp.MustCompile(`(?i)\.(jpe?g|png|gif|svg|ico|pdf|swf|mp4|avi|mp3|ogg|mkv|docx?|xlsx?|zip|gz|bz2|tar|xz)$`)
 )
 
 // Result struct
@@ -31,6 +32,13 @@ type result struct {
 	Errors           []string
 	ValidationErrors []validationError
 	Redirect         string
+}
+
+// appendResult safely appends a result to the global results slice.
+func appendResult(r result) {
+	resultsMutex.Lock()
+	results = append(results, r)
+	resultsMutex.Unlock()
 }
 
 // Add a link to the queue.
@@ -45,7 +53,7 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 	}
 
 	// remove trailing ? or #
-	if len(httpLink) > 0 && httpLink[len(httpLink)-1] == '?' || httpLink[len(httpLink)-1] == '#' {
+	if len(httpLink) > 0 && (httpLink[len(httpLink)-1] == '?' || httpLink[len(httpLink)-1] == '#') {
 		httpLink = httpLink[:len(httpLink)-1]
 	}
 
@@ -86,8 +94,12 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 		linksProcessed++
 		processed[httpLink] = actionWeight(action)
 
-		// progress report
-		fmt.Printf("\033[2K\r#%-3d (%d errors) %s", linksProcessed, errorsProcessed, truncateString(httpLink, 100))
+		// progress report: use stderr for machine-readable formats so stdout stays clean
+		progressOut := os.Stdout
+		if outputFormat != "text" {
+			progressOut = os.Stderr
+		}
+		fmt.Fprintf(progressOut, "\033[2K\r#%-3d (%d errors) %s", linksProcessed, errorsProcessed.Load(), truncateString(httpLink, 100))
 
 		if referer == "" {
 			// initiate empty slice
@@ -96,6 +108,7 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 			referrers[httpLink] = []string{referer}
 		}
 
+		wg.Add(1)
 		if isOutbound {
 			go head(httpLink, wg)
 		} else if action == "parse" {
@@ -103,8 +116,6 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 		} else {
 			go head(httpLink, wg)
 		}
-		// add small delay to ensure goroutine registers wg.Add(1) before completion
-		time.Sleep(time.Millisecond * 100)
 	}
 
 	<-threads // removes an int from threads, allowing another to proceed
@@ -112,8 +123,8 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 
 // FetchAndParse will request the URL and parse it.
 func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
-	wg.Add(1)
 	defer wg.Done()
+	crawlWait()
 	output := result{}
 	output.URL = httpLink
 	output.Type = action
@@ -127,9 +138,9 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 
 	req, err := http.NewRequest("GET", httpLink, nil)
 	if err != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-		results = append(results, output)
+		appendResult(output)
 		return
 	}
 
@@ -137,7 +148,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 
 	res, err := client.Do(req)
 	if err != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		if res != nil {
 			loc := res.Header.Get("Location")
 			output.StatusCode = res.StatusCode
@@ -145,14 +156,14 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 				full, err := absoluteURL(loc, httpLink)
 				if err == nil {
 					output.Redirect = full
-					results = append(results, output)
+					appendResult(output)
 					addQueueLink(full, action, httpLink, depth, wg)
 					return
 				}
 			}
 		}
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-		results = append(results, output)
+		appendResult(output)
 		return
 	}
 
@@ -161,17 +172,17 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 	output.StatusCode = res.StatusCode
 
 	if res.StatusCode != 200 {
-		errorsProcessed++
-		results = append(results, output)
+		errorsProcessed.Add(1)
+		appendResult(output)
 		return
 	}
 
 	// read the body to create two separate readers
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
-		errorsProcessed++
+		errorsProcessed.Add(1)
 		output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-		results = append(results, output)
+		appendResult(output)
 		return
 	}
 
@@ -189,14 +200,14 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 		doc, err := goquery.NewDocumentFromReader(r2)
 		if err != nil {
 			output.Errors = append(output.Errors, fmt.Sprintf("%s", err))
-			results = append(results, output)
+			appendResult(output)
 			return
 		}
 
 		// CHECK FOR BASE
 		baseLink := httpLink
 
-		doc.Find("base").Each(func(i int, s *goquery.Selection) {
+		doc.Find("base").Each(func(_ int, s *goquery.Selection) {
 			if link, ok := s.Attr("href"); ok {
 				full, err := absoluteURL(link, httpLink)
 				if err == nil {
@@ -206,14 +217,14 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 		})
 
 		// IMAGES/VIDEOS/AUDIO/IFRAME
-		doc.Find("img,embed,source,iframe").Each(func(i int, s *goquery.Selection) {
+		doc.Find("img,embed,source,iframe").Each(func(_ int, s *goquery.Selection) {
 			if link, ok := s.Attr("src"); ok {
 				full, err := absoluteURL(link, baseLink)
 				if err != nil {
 					return
 				}
 				if isMixedContent(httpLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to file: %s", full))
 				}
 				fileType := "head"
@@ -234,7 +245,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 						return
 					}
 					if isMixedContent(httpLink, full) {
-						errorsProcessed++
+						errorsProcessed.Add(1)
 						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to file: %s", full))
 					}
 					addQueueLink(full, "head", httpLink, depth, wg)
@@ -243,7 +254,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 		})
 
 		// CSS
-		doc.Find("link[rel=\"stylesheet\"]").Each(func(i int, s *goquery.Selection) {
+		doc.Find("link[rel=\"stylesheet\"]").Each(func(_ int, s *goquery.Selection) {
 			if link, ok := s.Attr("href"); ok {
 				full, err := absoluteURL(link, baseLink)
 				if err != nil {
@@ -251,7 +262,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 					return
 				}
 				if isMixedContent(baseLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content link to CSS: %s", full))
 				}
 				addQueueLink(full, "parse", httpLink, depth, wg)
@@ -259,7 +270,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 		})
 
 		// JS
-		doc.Find("script").Each(func(i int, s *goquery.Selection) {
+		doc.Find("script").Each(func(_ int, s *goquery.Selection) {
 			if link, ok := s.Attr("src"); ok {
 				full, err := absoluteURL(link, baseLink)
 				if err != nil {
@@ -267,7 +278,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 					return
 				}
 				if isMixedContent(baseLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to JS: %s", full))
 				}
 				addQueueLink(full, "head", httpLink, depth, wg)
@@ -275,14 +286,14 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 		})
 
 		// FAVICONS
-		doc.Find("link[rel=\"icon\"], link[rel=\"shortcut icon\"], link[rel=\"apple-touch-icon\"]").Each(func(i int, s *goquery.Selection) {
+		doc.Find("link[rel=\"icon\"], link[rel=\"shortcut icon\"], link[rel=\"apple-touch-icon\"]").Each(func(_ int, s *goquery.Selection) {
 			if link, ok := s.Attr("href"); ok {
 				full, err := absoluteURL(link, baseLink)
 				if err != nil {
 					return
 				}
 				if isMixedContent(baseLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
 				}
 				addQueueLink(full, "head", httpLink, depth, wg)
@@ -290,14 +301,14 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 		})
 
 		// OPEN GRAPH IMAGES
-		doc.Find("meta[property$=\":image\"], meta[name$=\":image\"]").Each(func(i int, s *goquery.Selection) {
+		doc.Find("meta[property$=\":image\"], meta[name$=\":image\"]").Each(func(_ int, s *goquery.Selection) {
 			if link, ok := s.Attr("content"); ok {
 				full, err := absoluteURL(link, baseLink)
 				if err != nil {
 					return
 				}
 				if isMixedContent(baseLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content to favicon: %s", full))
 				}
 				addQueueLink(full, "head", httpLink, depth, wg)
@@ -305,7 +316,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 		})
 
 		// LINKS
-		doc.Find("a").Each(func(i int, s *goquery.Selection) {
+		doc.Find("a").Each(func(_ int, s *goquery.Selection) {
 			if link, ok := s.Attr("href"); ok {
 				full, err := absoluteURL(link, baseLink)
 				if err != nil {
@@ -323,7 +334,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 		})
 
 		// INLINE STYLE BLOCKS
-		doc.Find("style").Each(func(i int, s *goquery.Selection) {
+		doc.Find("style").Each(func(_ int, s *goquery.Selection) {
 			raw := s.Text()
 			for _, link := range extractStyleURLs(raw) {
 				full, err := absoluteURL(link, baseLink)
@@ -331,7 +342,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 					break
 				}
 				if isMixedContent(httpLink, full) {
-					errorsProcessed++
+					errorsProcessed.Add(1)
 					output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
 				}
 				addQueueLink(full, "head", httpLink, depth, wg)
@@ -339,7 +350,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 		})
 
 		// INLINE STYLES
-		doc.Find("*[style]").Each(func(i int, s *goquery.Selection) {
+		doc.Find("*[style]").Each(func(_ int, s *goquery.Selection) {
 			if style, ok := s.Attr("style"); ok {
 				for _, link := range extractStyleURLs(style) {
 					full, err := absoluteURL(link, baseLink)
@@ -347,7 +358,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 						return
 					}
 					if isMixedContent(httpLink, full) {
-						errorsProcessed++
+						errorsProcessed.Add(1)
 						output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
 					}
 					addQueueLink(full, "head", httpLink, depth, wg)
@@ -370,7 +381,7 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 				continue
 			}
 			if isMixedContent(httpLink, full) {
-				errorsProcessed++
+				errorsProcessed.Add(1)
 				output.Errors = append(output.Errors, fmt.Sprintf("Mixed content from CSS: %s", full))
 			}
 			addQueueLink(full, "head", httpLink, depth, wg)
@@ -378,5 +389,5 @@ func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 	}
 
 	// append results to global
-	results = append(results, output)
+	appendResult(output)
 }
