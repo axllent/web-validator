@@ -33,12 +33,13 @@ var (
 	update           bool
 	showVersion      bool
 	ignoreURLs       string
+	useSitemap       bool
 	timeoutSeconds   int
 	threads          chan int
 	appVersion       = "dev"
 	userAgent        = "web-validator"
-	linksProcessed  = 0
-	errorsProcessed atomic.Int64
+	linksProcessed   = 0
+	errorsProcessed  atomic.Int64
 
 	ghruConf = ghru.Config{
 		Repo:           "axllent/web-validator",
@@ -71,6 +72,7 @@ func main() {
 	flag.BoolVar(&validateHTML, "html", false, "validate HTML")
 	flag.BoolVar(&validateCSS, "css", false, "validate CSS")
 	flag.StringVarP(&ignoreURLs, "ignore", "i", "", "ignore URLs, comma-separated, wildcards allowed (*.jpg,example.com)")
+	flag.BoolVarP(&useSitemap, "sitemap", "s", false, "seed URLs from /sitemap.xml (silently skipped if not found)")
 	flag.BoolVarP(&noRobots, "no-robots", "n", false, "ignore robots.txt (if exists)")
 	flag.BoolVarP(&redirectWarnings, "redirects", "r", false, "treat redirects as errors")
 	flag.BoolVarP(&showWarnings, "warnings", "w", false, "display validation warnings (default errors only)")
@@ -190,6 +192,10 @@ func main() {
 	start := time.Now()
 
 	var wg sync.WaitGroup
+
+	if useSitemap {
+		seedFromSitemap(args[0], &wg)
+	}
 
 	addQueueLink(args[0], "parse", "", 0, &wg)
 
