@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -18,9 +19,8 @@ import (
 var (
 	processed      = make(map[string]int) // 1 = HEAD, 2 = GET
 	referrers      = make(map[string][]string)
-	mapMutex       = sync.RWMutex{}
-	validatorMutex = sync.RWMutex{}
-	resultsMutex   = sync.Mutex{}
+	mapMutex     = sync.RWMutex{}
+	resultsMutex = sync.Mutex{}
 	fileRegex      = regexp.MustCompile(`(?i)\.(jpe?g|png|gif|svg|ico|pdf|swf|mp4|avi|mp3|ogg|mkv|docx?|xlsx?|zip|gz|bz2|tar|xz)$`)
 )
 
@@ -94,8 +94,12 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 		linksProcessed++
 		processed[httpLink] = actionWeight(action)
 
-		// progress report
-		fmt.Printf("\033[2K\r#%-3d (%d errors) %s", linksProcessed, errorsProcessed.Load(), truncateString(httpLink, 100))
+		// progress report: use stderr for machine-readable formats so stdout stays clean
+		progressOut := os.Stdout
+		if outputFormat != "text" {
+			progressOut = os.Stderr
+		}
+		fmt.Fprintf(progressOut, "\033[2K\r#%-3d (%d errors) %s", linksProcessed, errorsProcessed.Load(), truncateString(httpLink, 100))
 
 		if referer == "" {
 			// initiate empty slice
@@ -120,6 +124,7 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 // FetchAndParse will request the URL and parse it.
 func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
 	defer wg.Done()
+	crawlWait()
 	output := result{}
 	output.URL = httpLink
 	output.Type = action

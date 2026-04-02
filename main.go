@@ -33,7 +33,11 @@ var (
 	update           bool
 	showVersion      bool
 	ignoreURLs       string
+	skipDomains      = "linkedin.com,google.com,cloudflare.com"
 	useSitemap       bool
+	outputFormat     = "text"
+	crawlDelay       time.Duration
+	validatorDelay   = time.Second
 	timeoutSeconds   int
 	threads          chan int
 	appVersion       = "dev"
@@ -72,11 +76,15 @@ func main() {
 	flag.BoolVar(&validateHTML, "html", false, "validate HTML")
 	flag.BoolVar(&validateCSS, "css", false, "validate CSS")
 	flag.StringVarP(&ignoreURLs, "ignore", "i", "", "ignore URLs, comma-separated, wildcards allowed (*.jpg,example.com)")
+	flag.StringVar(&skipDomains, "skip-domains", skipDomains, "skip domains (and subdomains), comma-separated")
 	flag.BoolVarP(&useSitemap, "sitemap", "s", false, "seed URLs from /sitemap.xml (silently skipped if not found)")
 	flag.BoolVarP(&noRobots, "no-robots", "n", false, "ignore robots.txt (if exists)")
 	flag.BoolVarP(&redirectWarnings, "redirects", "r", false, "treat redirects as errors")
 	flag.BoolVarP(&showWarnings, "warnings", "w", false, "display validation warnings (default errors only)")
 	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -r -o --html --css\")")
+	flag.StringVar(&outputFormat, "output", "text", "output format: text, json, csv, html")
+	flag.DurationVar(&crawlDelay, "crawl-delay", 0, "delay between crawl requests, e.g. 500ms, 1s")
+	flag.DurationVar(&validatorDelay, "validator-delay", time.Second, "delay between validator requests, e.g. 500ms, 1s")
 	flag.IntVarP(&nrThreads, "threads", "t", 5, "number of threads")
 	flag.IntVar(&timeoutSeconds, "timeout", 10, "timeout in seconds")
 	flag.StringVar(&htmlValidator, "validator", htmlValidator, "Nu Html validator")
@@ -141,6 +149,13 @@ func main() {
 		os.Exit(2)
 	}
 
+	switch outputFormat {
+	case "text", "json", "csv", "html":
+	default:
+		fmt.Printf("Invalid output format %q: must be text, json, csv, or html\n", outputFormat)
+		os.Exit(2)
+	}
+
 	if htmlValidator != "" {
 		u, err := url.Parse(htmlValidator)
 		if err != nil {
@@ -153,6 +168,19 @@ func main() {
 		q.Set("out", "json")
 		u.RawQuery = q.Encode()
 		htmlValidator = u.String()
+	}
+
+	if skipDomains != "" {
+		for _, d := range strings.Split(skipDomains, ",") {
+			d = strings.TrimSpace(d)
+			if d == "" {
+				continue
+			}
+			escaped := regexp.QuoteMeta(d)
+			// match the apex domain and any subdomain
+			re := regexp.MustCompile(`(?i)^https?://([^/]+\.)?` + escaped + `(/|$)`)
+			ignoreMatches = append(ignoreMatches, re)
+		}
 	}
 
 	if ignoreURLs != "" {

@@ -11,14 +11,46 @@ import (
 )
 
 var (
-	ignoreMatches = []*regexp.Regexp{
-		regexp.MustCompile(`^https?://(www\.)?linkedin\.com`),
-		regexp.MustCompile(`^https://(.*)\.google\.com`),
-		regexp.MustCompile(`^https://(.*)\.cloudflare\.com`),
-	}
+	crawlMutex        sync.Mutex
+	lastCrawlTime     time.Time
+	validatorMux      sync.Mutex
+	lastValidatorTime time.Time
+
+	ignoreMatches = []*regexp.Regexp{}
 
 	cssURLmatches = regexp.MustCompile(`(?mU)\burl\((.*)\)`)
 )
+
+// crawlWait enforces the crawl delay by serialising requests: each caller
+// waits until crawlDelay has elapsed since the last request was made.
+func crawlWait() {
+	if crawlDelay == 0 {
+		return
+	}
+	crawlMutex.Lock()
+	defer crawlMutex.Unlock()
+	if !lastCrawlTime.IsZero() {
+		if elapsed := time.Since(lastCrawlTime); elapsed < crawlDelay {
+			time.Sleep(crawlDelay - elapsed)
+		}
+	}
+	lastCrawlTime = time.Now()
+}
+
+// validatorWait enforces the validator delay using the same pattern as crawlWait.
+func validatorWait() {
+	if validatorDelay == 0 {
+		return
+	}
+	validatorMux.Lock()
+	defer validatorMux.Unlock()
+	if !lastValidatorTime.IsZero() {
+		if elapsed := time.Since(lastValidatorTime); elapsed < validatorDelay {
+			time.Sleep(validatorDelay - elapsed)
+		}
+	}
+	lastValidatorTime = time.Now()
+}
 
 // HEAD a link to get the status of the URL
 // Note: some sites block HEAD, so if a HEAD fails with a 404 or 405 error
@@ -89,6 +121,7 @@ func head(httpLink string, wg *sync.WaitGroup) {
 
 // Fallback for failed HEAD requests
 func getResponse(httpLink string, wg *sync.WaitGroup) {
+	crawlWait()
 	output := result{}
 	output.URL = httpLink
 	timeout := time.Duration(time.Duration(timeoutSeconds) * time.Second)
