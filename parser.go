@@ -45,7 +45,7 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 	}
 
 	// remove trailing ? or #
-	if len(httpLink) > 0 && httpLink[len(httpLink)-1] == '?' || httpLink[len(httpLink)-1] == '#' {
+	if len(httpLink) > 0 && (httpLink[len(httpLink)-1] == '?' || httpLink[len(httpLink)-1] == '#') {
 		httpLink = httpLink[:len(httpLink)-1]
 	}
 

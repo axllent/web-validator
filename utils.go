@@ -242,11 +242,11 @@ func extractStyleURLs(body string) []string {
 	for _, res := range matches {
 		url := strings.TrimSpace(res[1])
 		// strip quotes left
-		if len(url) > 0 && url[0] == '"' || url[0] == '\'' {
+		if len(url) > 0 && (url[0] == '"' || url[0] == '\'') {
 			url = url[1:]
 		}
 		// strip quotes right
-		if len(url) > 0 && url[len(url)-1] == '"' || url[len(url)-1] == '\'' {
+		if len(url) > 0 && (url[len(url)-1] == '"' || url[len(url)-1] == '\'') {
 			url = url[:len(url)-1]
 		}
 		if len(url) > 0 {
