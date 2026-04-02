@@ -96,6 +96,7 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 			referrers[httpLink] = []string{referer}
 		}
 
+		wg.Add(1)
 		if isOutbound {
 			go head(httpLink, wg)
 		} else if action == "parse" {
@@ -103,8 +104,6 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 		} else {
 			go head(httpLink, wg)
 		}
-		// add small delay to ensure goroutine registers wg.Add(1) before completion
-		time.Sleep(time.Millisecond * 100)
 	}
 
 	<-threads // removes an int from threads, allowing another to proceed
@@ -112,7 +111,6 @@ func addQueueLink(httpLink, action, referer string, depth int, wg *sync.WaitGrou
 
 // FetchAndParse will request the URL and parse it.
 func fetchAndParse(httpLink, action string, depth int, wg *sync.WaitGroup) {
-	wg.Add(1)
 	defer wg.Done()
 	output := result{}
 	output.URL = httpLink

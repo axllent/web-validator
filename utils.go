@@ -24,7 +24,6 @@ var (
 // Note: some sites block HEAD, so if a HEAD fails with a 404 or 405 error
 // then a getResponse() is performed is done (outbound links only)
 func head(httpLink string, wg *sync.WaitGroup) {
-	wg.Add(1)
 	defer wg.Done()
 	output := result{}
 	output.URL = httpLink
