@@ -16,11 +16,7 @@ var (
 	validatorMux      sync.Mutex
 	lastValidatorTime time.Time
 
-	ignoreMatches = []*regexp.Regexp{
-		regexp.MustCompile(`^https?://(www\.)?linkedin\.com`),
-		regexp.MustCompile(`^https://(.*)\.google\.com`),
-		regexp.MustCompile(`^https://(.*)\.cloudflare\.com`),
-	}
+	ignoreMatches = []*regexp.Regexp{}
 
 	cssURLmatches = regexp.MustCompile(`(?mU)\burl\((.*)\)`)
 )

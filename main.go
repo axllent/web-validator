@@ -33,6 +33,7 @@ var (
 	update           bool
 	showVersion      bool
 	ignoreURLs       string
+	skipDomains      = "linkedin.com,google.com,cloudflare.com"
 	useSitemap       bool
 	outputFormat     = "text"
 	crawlDelay       time.Duration
@@ -75,6 +76,7 @@ func main() {
 	flag.BoolVar(&validateHTML, "html", false, "validate HTML")
 	flag.BoolVar(&validateCSS, "css", false, "validate CSS")
 	flag.StringVarP(&ignoreURLs, "ignore", "i", "", "ignore URLs, comma-separated, wildcards allowed (*.jpg,example.com)")
+	flag.StringVar(&skipDomains, "skip-domains", skipDomains, "skip domains (and subdomains), comma-separated")
 	flag.BoolVarP(&useSitemap, "sitemap", "s", false, "seed URLs from /sitemap.xml (silently skipped if not found)")
 	flag.BoolVarP(&noRobots, "no-robots", "n", false, "ignore robots.txt (if exists)")
 	flag.BoolVarP(&redirectWarnings, "redirects", "r", false, "treat redirects as errors")
@@ -166,6 +168,19 @@ func main() {
 		q.Set("out", "json")
 		u.RawQuery = q.Encode()
 		htmlValidator = u.String()
+	}
+
+	if skipDomains != "" {
+		for _, d := range strings.Split(skipDomains, ",") {
+			d = strings.TrimSpace(d)
+			if d == "" {
+				continue
+			}
+			escaped := regexp.QuoteMeta(d)
+			// match the apex domain and any subdomain
+			re := regexp.MustCompile(`(?i)^https?://([^/]+\.)?` + escaped + `(/|$)`)
+			ignoreMatches = append(ignoreMatches, re)
+		}
 	}
 
 	if ignoreURLs != "" {
