@@ -35,6 +35,8 @@ var (
 	ignoreURLs       string
 	useSitemap       bool
 	outputFormat     = "text"
+	crawlDelay       time.Duration
+	validatorDelay   = time.Second
 	timeoutSeconds   int
 	threads          chan int
 	appVersion       = "dev"
@@ -79,6 +81,8 @@ func main() {
 	flag.BoolVarP(&showWarnings, "warnings", "w", false, "display validation warnings (default errors only)")
 	flag.BoolVarP(&fullScan, "full", "f", false, "full scan (same as \"-a -r -o --html --css\")")
 	flag.StringVar(&outputFormat, "output", "text", "output format: text, json, csv, html")
+	flag.DurationVar(&crawlDelay, "crawl-delay", 0, "delay between crawl requests, e.g. 500ms, 1s")
+	flag.DurationVar(&validatorDelay, "validator-delay", time.Second, "delay between validator requests, e.g. 500ms, 1s")
 	flag.IntVarP(&nrThreads, "threads", "t", 5, "number of threads")
 	flag.IntVar(&timeoutSeconds, "timeout", 10, "timeout in seconds")
 	flag.StringVar(&htmlValidator, "validator", htmlValidator, "Nu Html validator")
