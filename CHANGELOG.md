@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.1.1]
+
+- Update Go dependencies
+
 ## [1.1.0]
 
 - Add output format options with reporting in multiple formats (text, json, csv, html)
