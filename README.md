@@ -42,6 +42,7 @@ Options:
       --validator-delay duration   delay between validator requests, e.g. 500ms, 1s (default 1s)
   -t, --threads int                number of threads (default 5)
       --timeout int                timeout in seconds (default 10)
+      --auth string                HTTP basic auth credentials (user:password), applied only to the primary site
       --validator string           Nu Html validator (default "https://validator.w3.org/nu/")
   -u, --update                     update to latest release
   -v, --version                    show app version
