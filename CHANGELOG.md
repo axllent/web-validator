@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.2.0]
+
+- Add basic auth support (restricted to primary site)
+- Update Go dependencies
+
 ## [1.1.1]
 
 - Update Go dependencies
