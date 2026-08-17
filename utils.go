@@ -21,6 +21,18 @@ var (
 	cssURLmatches = regexp.MustCompile(`(?mU)\burl\((.*)\)`)
 )
 
+// applyAuth sets HTTP basic auth on the request when credentials are configured
+// and the request targets the primary site. Outbound requests are left untouched.
+func applyAuth(req *http.Request) {
+	if authUser == "" {
+		return
+	}
+	if baseDomain == "" || req.URL.Host != baseDomain {
+		return
+	}
+	req.SetBasicAuth(authUser, authPassword)
+}
+
 // crawlWait enforces the crawl delay by serialising requests: each caller
 // waits until crawlDelay has elapsed since the last request was made.
 func crawlWait() {
@@ -75,6 +87,7 @@ func head(httpLink string, wg *sync.WaitGroup) {
 	}
 
 	req.Header.Set("User-Agent", userAgent)
+	applyAuth(req)
 
 	res, err := client.Do(req)
 	if err != nil {
@@ -140,6 +153,7 @@ func getResponse(httpLink string, wg *sync.WaitGroup) {
 	}
 
 	req.Header.Set("User-Agent", userAgent)
+	applyAuth(req)
 
 	res, err := client.Do(req)
 	if err != nil {

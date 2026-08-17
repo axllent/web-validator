@@ -41,6 +41,7 @@ func initRobotsTxt(startURL string) {
 	}
 
 	req.Header.Set("User-Agent", userAgent)
+	applyAuth(req)
 
 	res, err := client.Do(req)
 	if err != nil {

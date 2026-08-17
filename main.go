@@ -44,6 +44,9 @@ var (
 	userAgent        = "web-validator"
 	linksProcessed   = 0
 	errorsProcessed  atomic.Int64
+	authCredentials  string
+	authUser         string
+	authPassword     string
 
 	ghruConf = ghru.Config{
 		Repo:           "axllent/web-validator",
@@ -87,6 +90,7 @@ func main() {
 	flag.DurationVar(&validatorDelay, "validator-delay", time.Second, "delay between validator requests, e.g. 500ms, 1s")
 	flag.IntVarP(&nrThreads, "threads", "t", 5, "number of threads")
 	flag.IntVar(&timeoutSeconds, "timeout", 10, "timeout in seconds")
+	flag.StringVar(&authCredentials, "auth", "", "HTTP basic auth credentials (user:password), applied only to the primary site")
 	flag.StringVar(&htmlValidator, "validator", htmlValidator, "Nu Html validator")
 	flag.BoolVarP(&update, "update", "u", false, "update to latest release")
 	flag.BoolVarP(&showVersion, "version", "v", false, "show app version")
@@ -211,6 +215,20 @@ func main() {
 	if err != nil || u.Host == "" {
 		fmt.Printf("Please use a full URL: %s\n", args[0])
 		os.Exit(2)
+	}
+
+	// set the primary host up front so basic-auth and robots.txt scoping
+	// work for the very first requests (robots.txt, sitemap)
+	baseDomain = u.Host
+
+	if authCredentials != "" {
+		user, pass, ok := strings.Cut(authCredentials, ":")
+		if !ok || user == "" {
+			fmt.Println("Invalid --auth value: expected user:password")
+			os.Exit(2)
+		}
+		authUser = user
+		authPassword = pass
 	}
 
 	initRobotsTxt(args[0])
